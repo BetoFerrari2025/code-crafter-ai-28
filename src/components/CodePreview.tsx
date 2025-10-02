@@ -1,11 +1,22 @@
 import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type ViewMode = "desktop" | "tablet" | "mobile";
 
-const CodePreview = () => {
+interface CodePreviewProps {
+  generatedCode?: string;
+}
+
+const CodePreview = ({ generatedCode }: CodePreviewProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
+  const [displayCode, setDisplayCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (generatedCode) {
+      setDisplayCode(generatedCode);
+    }
+  }, [generatedCode]);
 
   const getPreviewWidth = () => {
     switch (viewMode) {
@@ -55,17 +66,33 @@ const CodePreview = () => {
       <div className="flex-1 overflow-auto p-8 flex justify-center">
         <div className={`${getPreviewWidth()} h-full transition-all duration-300`}>
           <div className="w-full h-full bg-background rounded-xl shadow-medium border border-border overflow-hidden">
-            <div className="h-full flex items-center justify-center p-8">
-              <div className="text-center space-y-4 animate-fade-in">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-hero flex items-center justify-center shadow-soft">
-                  <Monitor className="h-8 w-8 text-white" />
+            {displayCode ? (
+              <div className="h-full overflow-auto p-6">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-muted-foreground ml-2">Preview do Código</span>
+                  </div>
+                  <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                    {displayCode}
+                  </pre>
                 </div>
-                <h3 className="text-2xl font-bold">Seu App Aqui</h3>
-                <p className="text-muted-foreground max-w-md">
-                  O código gerado pela IA aparecerá aqui em tempo real. Comece descrevendo o que você quer criar no chat.
-                </p>
               </div>
-            </div>
+            ) : (
+              <div className="h-full flex items-center justify-center p-8">
+                <div className="text-center space-y-4 animate-fade-in">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-hero flex items-center justify-center shadow-soft">
+                    <Monitor className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold">Seu App Aqui</h3>
+                  <p className="text-muted-foreground max-w-md">
+                    O código gerado pela IA aparecerá aqui em tempo real. Comece descrevendo o que você quer criar no chat.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

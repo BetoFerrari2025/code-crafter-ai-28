@@ -2,15 +2,22 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Code2, Sparkles } from "lucide-react";
+import { Send, Code2, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  isCode?: boolean;
 }
 
-const ChatSidebar = () => {
+interface ChatSidebarProps {
+  onCodeGenerated?: (code: string) => void;
+}
+
+const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -19,9 +26,11 @@ const ChatSidebar = () => {
     },
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -30,18 +39,60 @@ const ChatSidebar = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-code', {
+        body: {
+          messages: [
+            ...messages.filter(m => !m.isCode).map(m => ({
+              role: m.role,
+              content: m.content
+            })),
+            { role: 'user', content: input }
+          ]
+        }
+      });
+
+      if (error) throw error;
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Entendi! Vou gerar o código para isso. Por favor, aguarde um momento...",
+        content: data.code,
+        isCode: true,
       };
+      
       setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+      
+      if (onCodeGenerated) {
+        onCodeGenerated(data.code);
+      }
 
-    setInput("");
+      toast({
+        title: "Código gerado!",
+        description: "O código foi gerado com sucesso. Confira no preview.",
+      });
+    } catch (error) {
+      console.error('Error generating code:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Desculpe, ocorreu um erro ao gerar o código. Por favor, tente novamente.",
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o código. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -83,7 +134,13 @@ const ChatSidebar = () => {
                     : "bg-sidebar-accent text-sidebar-foreground"
                 }`}
               >
-                <p className="text-sm">{message.content}</p>
+                {message.isCode ? (
+                  <pre className="text-xs overflow-x-auto whitespace-pre-wrap font-mono">
+                    {message.content}
+                  </pre>
+                ) : (
+                  <p className="text-sm">{message.content}</p>
+                )}
               </div>
             </div>
           ))}
@@ -108,9 +165,13 @@ const ChatSidebar = () => {
             onClick={handleSend}
             size="icon"
             className="absolute bottom-3 right-3 rounded-full"
-            disabled={!input.trim()}
+            disabled={!input.trim() || isLoading}
           >
-            <Send className="h-4 w-4" />
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
