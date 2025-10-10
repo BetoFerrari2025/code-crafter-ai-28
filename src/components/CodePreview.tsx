@@ -30,52 +30,55 @@ const CodePreview = ({ generatedCode }: CodePreviewProps) => {
   };
 
   return (
-    <div className="flex-1 h-full bg-muted/30 flex flex-col">
-      <div className="h-14 border-b border-border bg-background/50 backdrop-blur-sm flex items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            <Button
-              variant={viewMode === "desktop" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("desktop")}
-              className="h-8 px-3"
-            >
-              <Monitor className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "tablet" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("tablet")}
-              className="h-8 px-3"
-            >
-              <Tablet className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "mobile" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("mobile")}
-              className="h-8 px-3"
-            >
-              <Smartphone className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className="flex-1 h-full bg-background flex flex-col">
+      <div className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
+        <div className="flex-1" />
+        <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-1">
+          <Button
+            variant={viewMode === "desktop" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("desktop")}
+            className="h-9 px-4"
+          >
+            <Monitor className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "tablet" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("tablet")}
+            className="h-9 px-4"
+          >
+            <Tablet className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "mobile" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("mobile")}
+            className="h-9 px-4"
+          >
+            <Smartphone className="h-4 w-4" />
+          </Button>
         </div>
-        <div className="text-sm text-muted-foreground">Preview ao vivo</div>
+        <div className="flex-1 flex justify-end">
+          <div className="text-sm text-muted-foreground">Preview ao vivo</div>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-8 flex justify-center">
+      <div className="flex-1 overflow-auto p-6 flex justify-center bg-muted/20">
         <div className={`${getPreviewWidth()} h-full transition-all duration-300`}>
-          <div className="w-full h-full bg-background rounded-xl shadow-medium border border-border overflow-hidden">
+          <div className="w-full h-full bg-background rounded-lg shadow-lg border border-border overflow-hidden">
             {displayCode ? (
-              <div className="h-full overflow-auto p-6">
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-3 h-3 rounded-full bg-destructive"></div>
+              <div className="h-full overflow-auto">
+                <div className="bg-muted/30 px-4 py-3 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                     <span className="text-xs text-muted-foreground ml-2">Preview do Código</span>
                   </div>
-                  <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                </div>
+                <div className="p-6">
+                  <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap text-foreground">
                     {displayCode}
                   </pre>
                 </div>
