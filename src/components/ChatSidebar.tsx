@@ -57,18 +57,17 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
 
       if (error) throw error;
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.code,
-        isCode: true,
-      };
-      
-      setMessages((prev) => [...prev, aiMessage]);
-      
       if (onCodeGenerated) {
         onCodeGenerated(data.code);
       }
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Código gerado com sucesso! Confira o preview ao lado.",
+      };
+      
+      setMessages((prev) => [...prev, aiMessage]);
 
       toast({
         title: "Código gerado!",

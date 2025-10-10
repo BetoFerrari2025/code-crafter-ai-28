@@ -17,6 +17,7 @@ const CodePreview = ({ generatedCode }: CodePreviewProps) => {
   useEffect(() => {
     if (generatedCode) {
       setDisplayCode(generatedCode);
+      setDisplayMode("preview");
     }
   }, [generatedCode]);
 
