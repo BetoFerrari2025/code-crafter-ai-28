@@ -144,6 +144,20 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
               </div>
             </div>
           ))}
+          
+          {isLoading && (
+            <div className="flex items-start gap-3 animate-fade-in">
+              <div className="w-8 h-8 rounded-full bg-gradient-hero flex items-center justify-center flex-shrink-0">
+                <Loader2 className="h-4 w-4 text-white animate-spin" />
+              </div>
+              <div className="flex-1 bg-sidebar-accent rounded-2xl px-4 py-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Pensando...</p>
+                  <p className="text-xs text-muted-foreground">Criando agora</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
 

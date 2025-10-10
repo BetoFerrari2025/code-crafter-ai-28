@@ -1,8 +1,9 @@
-import { Monitor, Smartphone, Tablet } from "lucide-react";
+import { Monitor, Smartphone, Tablet, Code2, Eye, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 type ViewMode = "desktop" | "tablet" | "mobile";
+type DisplayMode = "code" | "preview";
 
 interface CodePreviewProps {
   generatedCode?: string;
@@ -10,6 +11,7 @@ interface CodePreviewProps {
 
 const CodePreview = ({ generatedCode }: CodePreviewProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("code");
   const [displayCode, setDisplayCode] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,10 +31,50 @@ const CodePreview = ({ generatedCode }: CodePreviewProps) => {
     }
   };
 
+  const handleOpenInBrowser = () => {
+    if (displayCode) {
+      const blob = new Blob([displayCode], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className="flex-1 h-full bg-background flex flex-col">
       <div className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
-        <div className="flex-1" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            <Button
+              variant={displayMode === "preview" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setDisplayMode("preview")}
+              className="h-9 px-4"
+              title="Preview"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={displayMode === "code" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setDisplayMode("code")}
+              className="h-9 px-4"
+              title="Código"
+            >
+              <Code2 className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenInBrowser}
+            className="h-9 px-4"
+            disabled={!displayCode}
+            title="Abrir no navegador"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </div>
+        
         <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-1">
           <Button
             variant={viewMode === "desktop" ? "default" : "ghost"}
@@ -59,6 +101,7 @@ const CodePreview = ({ generatedCode }: CodePreviewProps) => {
             <Smartphone className="h-4 w-4" />
           </Button>
         </div>
+        
         <div className="flex-1 flex justify-end">
           <div className="text-sm text-muted-foreground">Preview ao vivo</div>
         </div>
@@ -74,13 +117,24 @@ const CodePreview = ({ generatedCode }: CodePreviewProps) => {
                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-xs text-muted-foreground ml-2">Preview do Código</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {displayMode === "preview" ? "Preview do Código" : "Código Gerado"}
+                    </span>
                   </div>
                 </div>
                 <div className="p-6">
-                  <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap text-foreground">
-                    {displayCode}
-                  </pre>
+                  {displayMode === "preview" ? (
+                    <iframe
+                      srcDoc={displayCode}
+                      className="w-full h-full border-0"
+                      title="Preview"
+                      sandbox="allow-scripts"
+                    />
+                  ) : (
+                    <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap text-foreground">
+                      {displayCode}
+                    </pre>
+                  )}
                 </div>
               </div>
             ) : (
