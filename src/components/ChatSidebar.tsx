@@ -64,7 +64,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Código gerado com sucesso! Confira o preview ao lado.",
+        content: "✓ Código gerado! Veja o preview ao lado.",
       };
       
       setMessages((prev) => [...prev, aiMessage]);
