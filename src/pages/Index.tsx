@@ -113,7 +113,7 @@ const Index = () => {
             description: "Banco de dados e APIs prontos para usar"
           }].map((feature, i) => <div key={i} className="bg-background/50 backdrop-blur-sm rounded-2xl p-6 border border-border hover:shadow-soft transition-smooth">
                 <div className="w-12 h-12 rounded-xl bg-gradient-hero flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-white bg-purple-500" />
+                  <feature.icon className="w-6 h-6 text-white bg-slate-50" />
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground text-sm">
