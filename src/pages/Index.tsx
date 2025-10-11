@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
+import ProjectsWorkspace from "@/components/ProjectsWorkspace";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -174,6 +175,9 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Projects Workspace */}
+      <ProjectsWorkspace />
     </div>
   );
 };
