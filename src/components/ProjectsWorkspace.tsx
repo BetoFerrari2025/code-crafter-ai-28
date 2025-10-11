@@ -88,7 +88,7 @@ const ProjectsWorkspace = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <h2 className="text-3xl font-bold">
-            Espaço de trabalho do Cursos Lovable
+            Espaço de trabalho do Cursos Criey
           </h2>
           <Button variant="link" className="md:ml-auto">
             Ver tudo
