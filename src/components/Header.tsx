@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Gift, Bell, Settings, UserPlus, Plus, HelpCircle, Palette, LogOut, ChevronRight, Check } from "lucide-react";
+import PricingDialog from "./PricingDialog";
+
 const Header = () => {
+  const [pricingOpen, setPricingOpen] = useState(false);
   return <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
@@ -19,9 +23,12 @@ const Header = () => {
             <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
               Comunidade
             </a>
-            <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
+            <button 
+              onClick={() => setPricingOpen(true)}
+              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth"
+            >
               Preços
-            </a>
+            </button>
             <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
               Empresarial
             </a>
@@ -71,7 +78,12 @@ const Header = () => {
                     <Gift className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">Torne-se um profissional</span>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-xs"
+                    onClick={() => setPricingOpen(true)}
+                  >
                     Atualizar
                   </Button>
                 </div>
@@ -165,6 +177,8 @@ const Header = () => {
           </Popover>
         </div>
       </div>
+      
+      <PricingDialog open={pricingOpen} onOpenChange={setPricingOpen} />
     </header>;
 };
 export default Header;
