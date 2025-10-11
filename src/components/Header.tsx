@@ -7,8 +7,10 @@ const Header = () => {
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-hero" />
-            <span className="font-bold text-xl">Criey
-          </span>
+            <span className="font-extrabold text-4xl text-black drop-shadow-md">
+  Criey
+</span>
+
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">

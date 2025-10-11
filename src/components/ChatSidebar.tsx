@@ -152,7 +152,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
               <div className="flex-1 bg-sidebar-accent rounded-2xl px-4 py-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Pensando...</p>
-                  <p className="text-xs text-muted-foreground">Criando agora</p>
+                  <p className="text-xs text-muted-foreground">Criando agora aguarde.</p>
                 </div>
               </div>
             </div>
@@ -171,7 +171,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
                 handleSend();
               }
             }}
-            placeholder="Descreva o que você quer adicionar..."
+            placeholder="Descreva o que você quer Fazer..."
             className="min-h-[100px] pr-12 resize-none"
           />
           <Button
