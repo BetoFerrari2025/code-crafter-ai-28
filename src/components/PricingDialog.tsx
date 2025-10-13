@@ -10,9 +10,9 @@ interface PricingDialogProps {
 const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
   const plans = [
     {
-      name: "Pró",
+      name: "Start",
       description: "Projetado para equipes dinâmicas que constroem juntas em tempo real.",
-      price: "25",
+      price: "47",
       period: "por mês",
       subtitle: "compartilhado entre usuários ilimitados",
       features: [
@@ -28,13 +28,13 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
       buttonVariant: "default" as const
     },
     {
-      name: "Negócios",
+      name: "Pró",
       description: "Controles avançados e recursos avançados para departamentos em crescimento",
-      price: "50",
+      price: "97",
       period: "por mês",
       subtitle: "compartilhado entre usuários ilimitados",
       features: [
-        "100 créditos mensais",
+        "200 créditos mensais",
         "SSO",
         "Projetos Pessoais",
         "Desativar o treinamento de dados",
@@ -43,7 +43,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
       buttonVariant: "outline" as const
     },
     {
-      name: "Empresa",
+      name: "Premium",
       description: "Criado para grandes organizações que precisam de flexibilidade, escala e governança.",
       price: null,
       period: "Faturamento flexível",
@@ -109,15 +109,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
                   </Button>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 mb-4">
-                      <input
-                        type="radio"
-                        name={`billing-${plan.name}`}
-                        value="annual"
-                        className="w-4 h-4"
-                      />
-                      <label className="text-sm">Anual</label>
-                    </div>
+                    
                     <Button
                       variant={plan.buttonVariant}
                       className="w-full mb-6"
