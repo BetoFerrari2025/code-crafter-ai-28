@@ -8,6 +8,9 @@ import {
   ExternalLink,
   Download,
   Loader2,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import * as Babel from "@babel/standalone"; // 🔥 IMPORTANTE para renderização TSX
@@ -25,11 +28,23 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
   const [displayMode, setDisplayMode] = useState<DisplayMode>("preview");
   const [displayCode, setDisplayCode] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCode, setEditedCode] = useState<string>("");
 
   // 🧠 --- LIMPA e PREPARA o código do preview ---
   useEffect(() => {
     if (generatedCode) {
-      let cleaned = generatedCode
+      let cleaned = generatedCode;
+
+      // 👇 Novo: se o código vier em formato JSON, extrai o campo "code"
+      try {
+        const parsed = JSON.parse(generatedCode);
+        if (parsed.code) cleaned = parsed.code;
+      } catch {
+        // não é JSON, segue o fluxo normal
+      }
+
+      cleaned = cleaned
         .replace(/```[a-z]*\n?/gi, "")
         .replace(/```/g, "")
         .replace(/^import\s.+from\s.+;$/gm, "")
@@ -43,62 +58,63 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
       }
 
       setDisplayCode(cleaned);
-
-      try {
-        const transpiled = Babel.transform(cleaned, {
-          presets: ["react", "typescript", "env"],
-          filename: "file.tsx",
-        }).code;
-
-        const script = `
-  const exports = {};
-  const { useState, useEffect, useRef, useMemo, useCallback } = React;
-  const { createRoot } = ReactDOM;
-
-  ${transpiled}
-
-  const RenderComp = exports.default || App || Calculator || Component;
-  const root = createRoot(document.getElementById("root"));
-  root.render(React.createElement(RenderComp));
-`;
-
-        const html = `
-          <html>
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <title>Preview</title>
-              <script src="https://cdn.tailwindcss.com"></script>
-              <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-              <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-              <style>
-                body {
-                  margin: 0;
-                  padding: 0;
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-                    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-                    sans-serif;
-                  -webkit-font-smoothing: antialiased;
-                  -moz-osx-font-smoothing: grayscale;
-                }
-                * {
-                  box-sizing: border-box;
-                }
-              </style>
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="text/javascript">${script}</script>
-            </body>
-          </html>
-        `;
-
-        setPreviewHtml(html);
-      } catch (err) {
-        console.error("Erro ao compilar React preview:", err);
-      }
+      setEditedCode(cleaned);
+      compilePreview(cleaned);
     }
   }, [generatedCode]);
+
+  // 🧩 Compila o preview React/TSX
+  const compilePreview = (code: string) => {
+    try {
+      const transpiled = Babel.transform(code, {
+        presets: ["react", "typescript", "env"],
+        filename: "file.tsx",
+      }).code;
+
+      const script = `
+        const exports = {};
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+        const { createRoot } = ReactDOM;
+
+        ${transpiled}
+
+        const RenderComp = exports.default || App || Calculator || Component;
+        const root = createRoot(document.getElementById("root"));
+        root.render(React.createElement(RenderComp));
+      `;
+
+      const html = `
+        <html>
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Preview</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+            <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: system-ui, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+              }
+              * { box-sizing: border-box; }
+            </style>
+          </head>
+          <body>
+            <div id="root"></div>
+            <script type="text/javascript">${script}</script>
+          </body>
+        </html>
+      `;
+
+      setPreviewHtml(html);
+    } catch (err) {
+      console.error("Erro ao compilar React preview:", err);
+    }
+  };
 
   // --- FUNÇÕES AUXILIARES ---
   const getPreviewWidth = () => {
@@ -128,12 +144,17 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
     link.click();
   };
 
+  const handleSaveEdit = () => {
+    setDisplayCode(editedCode);
+    setIsEditing(false);
+    compilePreview(editedCode);
+  };
+
   // --- RENDER ---
   return (
     <div className="flex-1 h-full bg-background flex flex-col">
       {/* Topbar */}
       <div className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
-        {/* Botões de modo */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
             <Button
@@ -217,17 +238,57 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
             {displayCode ? (
               <div className="h-full overflow-auto">
                 <div className="bg-muted/30 px-4 py-3 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {displayMode === "preview"
-                        ? "Visualização interativa"
-                        : "Código gerado pela IA"}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {displayMode === "preview"
+                          ? "Visualização interativa"
+                          : "Código gerado pela IA"}
+                      </span>
+                    </div>
+
+                    {displayMode === "code" && (
+                      <div className="flex items-center gap-2">
+                        {!isEditing ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(true)}
+                            title="Editar código"
+                          >
+                            <Pencil className="h-4 w-4 mr-1" /> Editar
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={handleSaveEdit}
+                              title="Salvar alterações"
+                            >
+                              <Save className="h-4 w-4 mr-1" /> Salvar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setIsEditing(false);
+                                setEditedCode(displayCode || "");
+                              }}
+                              title="Cancelar edição"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
+
                 <div className="p-6">
                   {displayMode === "preview" ? (
                     <iframe
@@ -236,6 +297,12 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
                       className="w-full h-[80vh] border-0 rounded-md"
                       title="Preview"
                       sandbox="allow-scripts allow-forms allow-same-origin"
+                    />
+                  ) : isEditing ? (
+                    <textarea
+                      value={editedCode}
+                      onChange={(e) => setEditedCode(e.target.value)}
+                      className="w-full h-[80vh] border rounded-md p-4 font-mono text-sm"
                     />
                   ) : (
                     <pre className="text-xs font-mono overflow-x-auto whitespace-pre-wrap text-foreground">

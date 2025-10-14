@@ -240,10 +240,19 @@ CHECKLIST:
   } catch (error) {
     console.error("💥 Erro no generate-code:", error);
     const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+  JSON.stringify({
+    type: "chat",
+    role: "assistant",
+    message: "😔 Peço desculpas, houve um erro ao gerar o preview. Tente novamente!",
+    code: null
+  }),
+  {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  }
+);
+
   }
 });
 
