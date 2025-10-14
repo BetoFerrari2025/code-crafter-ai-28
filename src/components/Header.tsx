@@ -20,9 +20,15 @@ const Header = () => {
 
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
-              Comunidade
-            </a>
+            <a
+  href="https://chat.whatsapp.com/Jtwl0qmsPT44ezle5xDjbB?mode=ems_copy_t"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth"
+>
+  Comunidade
+</a>
+
             <button 
               onClick={() => setPricingOpen(true)}
               className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth"
@@ -36,7 +42,7 @@ const Header = () => {
               Aprender
             </a>
             <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
-              Launched
+              Marketplace
             </a>
           </nav>
         </div>
@@ -138,20 +144,14 @@ const Header = () => {
                     </div>
                     <Check className="h-4 w-4 text-primary" />
                   </div>
-                  <Button variant="ghost" className="w-full justify-start" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar novo espaço de trabalho
-                  </Button>
+                  
                 </div>
 
                 <Separator />
 
                 {/* Footer Links */}
                 <div className="space-y-1">
-                  <Button variant="ghost" className="w-full justify-start" size="sm">
-                    <Gift className="h-4 w-4 mr-2" />
-                    Obter Créditos grátis
-                  </Button>
+                  
                   <Button variant="ghost" className="w-full justify-start" size="sm">
                     <HelpCircle className="h-4 w-4 mr-2" />
                     Centro de Ajuda
