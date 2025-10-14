@@ -1,23 +1,27 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="dom" />
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { messages } = await req.json();
-    console.log('Received messages:', messages);
+    console.log("📩 Mensagens recebidas:", messages);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+      throw new Error("LOVABLE_API_KEY não configurada");
     }
 
     const systemPrompt = `Você é um assistente de desenvolvimento especializado em criar aplicações React PROFISSIONAIS, MODERNAS e VISUALMENTE IMPRESSIONANTES.
@@ -294,64 +298,28 @@ Antes de retornar, verifique:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
+      console.error("❌ Erro da API:", response.status, errorText);
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log('AI response received');
     
-    let aiResponse = data.choices[0].message.content;
-    console.log('Raw AI response:', aiResponse);
-    
-    // Remover markdown code blocks se existirem
-    aiResponse = aiResponse
-      .replace(/```json\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .trim();
-    
-    console.log('Cleaned AI response:', aiResponse);
-    
-    // Tentar fazer parse do JSON retornado pela IA
-    try {
-      const parsedResponse = JSON.parse(aiResponse);
-      console.log('Parsed response type:', parsedResponse.type);
-      
-      // Validar se é um formato esperado
-      if (!parsedResponse.type || !['code', 'message'].includes(parsedResponse.type)) {
-        throw new Error('Invalid response type');
-      }
-      
-      return new Response(
-        JSON.stringify(parsedResponse),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    } catch (parseError) {
-      // Se não for JSON válido, assumir que é código e retornar no formato esperado
-      console.error('Failed to parse AI response as JSON:', parseError);
-      console.log('Response is not valid JSON, treating as raw code');
-      return new Response(
-        JSON.stringify({ 
-          type: 'code',
-          message: 'Código gerado!',
-          code: aiResponse 
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-  } catch (error) {
-    console.error('Error in generate-code function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const generatedCode = data.choices[0].message.content;
+
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ code: generatedCode }),
       {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
+  } catch (error) {
+    console.error("💥 Erro no generate-code:", error);
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
+

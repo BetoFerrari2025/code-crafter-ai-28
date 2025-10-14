@@ -25,7 +25,8 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         "Projetos privados",
         "Funções e permissões do usuário"
       ],
-      buttonVariant: "default" as const
+      buttonVariant: "default" as const,
+      link: "https://global.plumify.com.br/5lzyszdvht"
     },
     {
       name: "Pró",
@@ -40,7 +41,8 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         "Desativar o treinamento de dados",
         "Modelos de design"
       ],
-      buttonVariant: "outline" as const
+      buttonVariant: "outline" as const,
+      link: "https://global.plumify.com.br/zu6hf"
     },
     {
       name: "Premium",
@@ -108,15 +110,14 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
                     Agende uma demonstração
                   </Button>
                 ) : (
-                  <>
-                    
+                  <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
                     <Button
                       variant={plan.buttonVariant}
                       className="w-full mb-6"
                     >
                       Atualizar
                     </Button>
-                  </>
+                  </a>
                 )}
 
                 <div className="space-y-3">
