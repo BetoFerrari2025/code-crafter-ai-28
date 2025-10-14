@@ -57,15 +57,25 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
 
       if (error) throw error;
 
-      // Parse o JSON retornado pela IA
-      let generatedCode = data.code;
-      try {
-        const parsed = JSON.parse(data.code);
-        if (parsed.type === 'code' && parsed.code) {
-          generatedCode = parsed.code;
+      console.log('Resposta recebida:', data);
+
+      // Extrair o código React puro do JSON
+      let generatedCode = '';
+      
+      if (typeof data.code === 'string') {
+        try {
+          // Tenta fazer parse do JSON retornado pela IA
+          const parsed = JSON.parse(data.code);
+          if (parsed.type === 'code' && parsed.code) {
+            generatedCode = parsed.code;
+            console.log('Código extraído do JSON:', generatedCode.substring(0, 100));
+          } else {
+            generatedCode = data.code;
+          }
+        } catch (e) {
+          console.log('Não é JSON, usando código diretamente');
+          generatedCode = data.code;
         }
-      } catch {
-        // Se não for JSON, usa o código diretamente
       }
 
       if (onCodeGenerated && generatedCode) {
