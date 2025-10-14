@@ -219,7 +219,17 @@ CHECKLIST:
     const data = await response.json();
     console.log('AI response received');
     
-    const generatedCode = data.choices[0].message.content;
+    let generatedCode = data.choices[0].message.content;
+
+    // Parse o JSON retornado pela IA para extrair o código
+    try {
+      const parsed = JSON.parse(generatedCode);
+      if (parsed.type === 'code' && parsed.code) {
+        generatedCode = parsed.code;
+      }
+    } catch {
+      // Se não for JSON, usa o conteúdo diretamente
+    }
 
     return new Response(
       JSON.stringify({ code: generatedCode }),

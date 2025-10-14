@@ -57,8 +57,19 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
 
       if (error) throw error;
 
-      if (onCodeGenerated) {
-        onCodeGenerated(data.code);
+      // Parse o JSON retornado pela IA
+      let generatedCode = data.code;
+      try {
+        const parsed = JSON.parse(data.code);
+        if (parsed.type === 'code' && parsed.code) {
+          generatedCode = parsed.code;
+        }
+      } catch {
+        // Se não for JSON, usa o código diretamente
+      }
+
+      if (onCodeGenerated && generatedCode) {
+        onCodeGenerated(generatedCode);
       }
 
       const aiMessage: Message = {
