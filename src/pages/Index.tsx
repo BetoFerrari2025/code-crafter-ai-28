@@ -46,16 +46,6 @@ const Index = () => {
       {/* Content */}
       <div className="relative pt-32 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
-          {/* Badge */}
-          <div className="flex justify-center mb-8 animate-fade-in">
-            <Badge
-              variant="secondary"
-              className="px-4 py-2 text-sm backdrop-blur-sm border border-border bg-purple-600"
-            >
-              <Sparkles className="w-4 h-4 mr-2 text-primary" />
-              Apresentando a Criey IA
-            </Badge>
-          </div>
 
           {/* Hero Title */}
           <div className="text-center mb-8 space-y-4 animate-slide-up">
