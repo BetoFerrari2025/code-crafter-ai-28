@@ -26,6 +26,8 @@ serve(async (req: Request) => {
 
     const systemPrompt = `Você é um assistente de desenvolvimento especializado em criar aplicações React PROFISSIONAIS, MODERNAS e VISUALMENTE IMPRESSIONANTES.
 
+IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie código React que reflita o design, layout e estrutura mostrados nas imagens.
+
 ========================================
 REGRAS CRÍTICAS DE RESPOSTA
 ========================================
@@ -194,6 +196,39 @@ CHECKLIST:
 ✅ Hover effects e animações?
 ✅ Header e footer profissionais?`;
 
+    // Transformar mensagens para suportar imagens (formato multimodal)
+    const formattedMessages = messages.map((msg: any) => {
+      if (msg.images && msg.images.length > 0) {
+        // Mensagem com imagens - usar formato multimodal
+        const content: any[] = [
+          { type: 'text', text: msg.content }
+        ];
+        
+        // Adicionar cada imagem
+        msg.images.forEach((imageData: string) => {
+          content.push({
+            type: 'image_url',
+            image_url: {
+              url: imageData // Base64 data URL
+            }
+          });
+        });
+
+        return {
+          role: msg.role,
+          content: content
+        };
+      } else {
+        // Mensagem de texto simples
+        return {
+          role: msg.role,
+          content: msg.content
+        };
+      }
+    });
+
+    console.log("📸 Mensagens formatadas com", messages.filter((m: any) => m.images?.length > 0).length, "imagens");
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -204,7 +239,7 @@ CHECKLIST:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...messages
+          ...formattedMessages
         ],
         temperature: 0.7,
       }),
