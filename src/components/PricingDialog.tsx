@@ -12,7 +12,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
     {
       name: "Start",
       description: "Projetado para equipes dinâmicas que constroem juntas em tempo real.",
-      price: "47",
+      price: "3.99",
       period: "por mês",
       subtitle: "compartilhado entre usuários ilimitados",
       features: [
@@ -31,11 +31,11 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
     {
       name: "Pró",
       description: "Controles avançados e recursos avançados para departamentos em crescimento",
-      price: "97",
+      price: "9.90",
       period: "por mês",
       subtitle: "compartilhado entre usuários ilimitados",
       features: [
-        "200 créditos mensais",
+        "500 créditos mensais",
         "SSO",
         "Projetos Pessoais",
         "Desativar o treinamento de dados",
@@ -47,10 +47,11 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
     {
       name: "Premium",
       description: "Criado para grandes organizações que precisam de flexibilidade, escala e governança.",
-      price: null,
+      price: "37.90",
       period: "Faturamento flexível",
       subtitle: "Planos personalizados",
       features: [
+        "Ilimitado",
         "Suporte dedicado",
         "Serviços de integração",
         "Conexões personalizadas",
@@ -58,8 +59,8 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         "Sistemas de design personalizados"
       ],
       buttonVariant: "outline" as const,
-      customAction: true
-    }
+      link: "https://global.plumify.com.br/u83c1"
+    },
   ];
 
   return (

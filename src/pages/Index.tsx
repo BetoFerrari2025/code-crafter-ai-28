@@ -50,7 +50,7 @@ const Index = () => {
           {/* Hero Title */}
           <div className="text-center mb-8 space-y-4 animate-slide-up">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-center">
-              Crie algo Lucrativo{" "}
+              Crie algo...{" "}
               <span className="bg-gradient-hero bg-clip-text text-transparent">
                 🧡 Criey
               </span>
