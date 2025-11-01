@@ -106,20 +106,14 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
                   )}
                 </div>
 
-                {plan.customAction ? (
-                  <Button variant="outline" className="w-full mb-6">
-                    Agende uma demonstração
+                <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
+                  <Button
+                    variant={plan.buttonVariant}
+                    className="w-full mb-6"
+                  >
+                    Atualizar
                   </Button>
-                ) : (
-                  <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
-                    <Button
-                      variant={plan.buttonVariant}
-                      className="w-full mb-6"
-                    >
-                      Atualizar
-                    </Button>
-                  </a>
-                )}
+                </a>
 
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground mb-3">

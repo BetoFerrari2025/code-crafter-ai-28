@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Editor from "./pages/Editor";
 import NotFound from "./pages/NotFound";
-import MainBuilder from "@/components/builder/MainBuilder"; // 👈 Importa o construtor que criamos
+import Auth from "./pages/Auth";
+import MainBuilder from "@/components/builder/MainBuilder";
 
 const queryClient = new QueryClient();
 
@@ -18,16 +19,10 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* 🌐 Página inicial */}
           <Route path="/" element={<Index />} />
-
-          {/* ✨ Página do construtor tipo Lovable */}
+          <Route path="/auth" element={<Auth />} />
           <Route path="/builder" element={<MainBuilder />} />
-
-          {/* 🧠 Editor original do seu projeto */}
           <Route path="/editor" element={<Editor />} />
-
-          {/* 🚫 Rota de erro */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

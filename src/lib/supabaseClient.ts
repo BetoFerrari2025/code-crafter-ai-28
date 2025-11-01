@@ -1,6 +1,6 @@
 // src/lib/supabaseClient.ts
 
-import { getSupabase } from "@lovable/sdk"
+import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = getSupabase()
+export { supabase };
 

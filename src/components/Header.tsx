@@ -1,14 +1,36 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Gift, Bell, Settings, UserPlus, Plus, HelpCircle, Palette, LogOut, ChevronRight, Check } from "lucide-react";
+import { Gift, Bell, Settings, UserPlus, HelpCircle, Palette, LogOut, ChevronRight } from "lucide-react";
 import PricingDialog from "./PricingDialog";
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "@/hooks/use-toast";
 
 const Header = () => {
   const [pricingOpen, setPricingOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast({
+        title: "Logout realizado",
+        description: "Você saiu da sua conta com sucesso.",
+      });
+      navigate("/auth");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
   return <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
@@ -125,30 +147,6 @@ const Header = () => {
 
                 <Separator />
 
-                {/* Workspaces */}
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">
-                    Espaços de trabalho (1)
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          B
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="text-sm font-medium">Beto Ferrari</div>
-                        <div className="text-xs text-muted-foreground">LIVRE</div>
-                      </div>
-                    </div>
-                    <Check className="h-4 w-4 text-primary" />
-                  </div>
-                  
-                </div>
-
-                <Separator />
-
                 {/* Footer Links */}
                 <div className="space-y-1">
                   
@@ -168,7 +166,12 @@ const Header = () => {
                 <Separator />
 
                 {/* Logout */}
-                <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" size="sm">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10" 
+                  size="sm"
+                  onClick={handleLogout}
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   Sair
                 </Button>
