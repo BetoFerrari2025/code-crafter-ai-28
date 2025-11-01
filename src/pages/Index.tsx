@@ -49,15 +49,15 @@ const Index = () => {
 
           {/* Hero Title */}
           <div className="text-center mb-8 space-y-4 animate-slide-up">
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-center">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-center">
               Crie algo...{" "}
               <span className="bg-gradient-hero bg-clip-text text-transparent">
-                🧡 Criey
+                Criey
               </span>
             </h1>
 
             {/* Frase animada */}
-            <p className="text-xl md:text-2xl text-muted-foreground h-12">
+            <p className="text-base md:text-xl lg:text-2xl text-muted-foreground min-h-[3rem] md:min-h-[3.5rem]">
               <TypeAnimation
                 sequence={[
                   "Solicite à Criey a criação de um protótipo do seu projeto em poucos cliques.",
@@ -79,12 +79,12 @@ const Index = () => {
             className="mt-12 animate-slide-up"
             style={{ animationDelay: "0.2s" }}
           >
-            <div className="bg-background/80 backdrop-blur-xl rounded-3xl shadow-medium border border-border p-2">
+            <div className="bg-background/80 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-medium border border-border p-2 md:p-2">
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Solicite a criação do seu projeto em poucos cliques..."
-                className="min-h-[120px] border-0 bg-transparent text-lg resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="min-h-[100px] md:min-h-[120px] border-0 bg-transparent text-base md:text-lg resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                     handleStart();
@@ -92,23 +92,23 @@ const Index = () => {
                 }}
               />
 
-              <div className="flex items-center justify-between px-2 pt-2">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 px-2 pt-2">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground"
+                    className="text-muted-foreground text-xs md:text-sm"
                   >
-                    <Globe className="w-4 h-4 mr-2" />
+                    <Globe className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                     Público
                   </Button>
 
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground"
+                    className="text-muted-foreground text-xs md:text-sm"
                   >
-                    <Database className="w-4 h-4 mr-2" />
+                    <Database className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                     Supabase
                   </Button>
                 </div>
@@ -116,7 +116,7 @@ const Index = () => {
                 <Button
                   onClick={handleStart}
                   size="lg"
-                  className="rounded-full shadow-soft hover:shadow-medium transition-smooth"
+                  className="w-full md:w-auto rounded-full shadow-soft hover:shadow-medium transition-smooth"
                   disabled={!prompt.trim()}
                 >
                   Começar
@@ -128,7 +128,7 @@ const Index = () => {
 
           {/* Features */}
           <div
-            className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in"
+            className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-fade-in"
             style={{ animationDelay: "0.4s" }}
           >
             {[
@@ -150,12 +150,12 @@ const Index = () => {
             ].map((feature, i) => (
               <div
                 key={i}
-                className="bg-background/50 backdrop-blur-sm rounded-2xl p-6 border border-border hover:shadow-soft transition-smooth"
+                className="bg-background/50 backdrop-blur-sm rounded-xl md:rounded-2xl p-5 md:p-6 border border-border hover:shadow-soft transition-smooth w-full"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-hero flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-hero flex items-center justify-center mb-3 md:mb-4">
+                  <feature.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">
+                <h3 className="font-semibold text-base md:text-lg mb-2">
                   {feature.title}
                 </h3>
                 <p className="text-muted-foreground text-sm">

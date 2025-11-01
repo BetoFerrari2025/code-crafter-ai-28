@@ -91,13 +91,13 @@ const Header = () => {
           </nav>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {user ? (
             <>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="rounded-full hidden md:flex">
                 <Gift className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full relative">
+              <Button variant="ghost" size="icon" className="rounded-full relative hidden md:flex">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
               </Button>
@@ -210,11 +210,13 @@ const Header = () => {
               <Button 
                 variant="ghost" 
                 onClick={() => navigate("/auth")}
+                className="text-sm md:text-base px-3 md:px-4"
               >
                 Login
               </Button>
               <Button 
                 onClick={() => navigate("/auth")}
+                className="text-sm md:text-base px-4 md:px-6"
               >
                 Cadastro
               </Button>
