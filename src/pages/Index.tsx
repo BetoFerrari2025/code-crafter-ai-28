@@ -44,14 +44,14 @@ const Index = () => {
       <div className="absolute inset-0 backdrop-blur-3xl" />
 
       {/* Content */}
-      <div className="relative pt-32 pb-16 px-6">
-        <div className="container mx-auto max-w-4xl">
+      <div className="relative pt-32 pb-16 px-4 md:px-6">
+        <div className="container mx-auto max-w-4xl px-0 md:px-4">
 
           {/* Hero Title */}
           <div className="text-center mb-8 space-y-4 animate-slide-up">
             <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-center">
               Crie algo...{" "}
-              <span className="bg-gradient-hero bg-clip-text text-transparent">
+              <span className="bg-gradient-hero bg-clip-text text-transparent" style={{ fontFamily: 'inherit' }}>
                 Criey
               </span>
             </h1>
@@ -76,10 +76,10 @@ const Index = () => {
 
           {/* Input Box */}
           <div
-            className="mt-12 animate-slide-up"
+            className="mt-12 animate-slide-up mx-0"
             style={{ animationDelay: "0.2s" }}
           >
-            <div className="bg-background/80 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-medium border border-border p-2 md:p-2">
+            <div className="bg-background/80 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-medium border border-border p-2 md:p-2 w-full">
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
