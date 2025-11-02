@@ -74,9 +74,26 @@ const Index = () => {
             </p>
           </div>
 
+          {/* Download App Button */}
+          <div className="mt-8 text-center animate-fade-in md:hidden">
+            <Button
+              onClick={() => {
+                toast({
+                  title: "Baixar App",
+                  description: "Para instalar o app, abra o menu do navegador e selecione 'Adicionar à tela inicial'",
+                });
+              }}
+              variant="outline"
+              size="lg"
+              className="rounded-full"
+            >
+              Baixar App para Celular
+            </Button>
+          </div>
+
           {/* Input Box */}
           <div
-            className="mt-12 animate-slide-up mx-0"
+            className="mt-8 md:mt-12 animate-slide-up mx-0"
             style={{ animationDelay: "0.2s" }}
           >
             <div className="bg-background/80 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-medium border border-border p-2 md:p-2 w-full">

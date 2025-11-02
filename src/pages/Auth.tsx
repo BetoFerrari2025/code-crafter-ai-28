@@ -54,9 +54,9 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-6 rounded-2xl shadow-md w-96">
-        <h1 className="text-xl font-semibold text-center mb-4">
+    <div className="flex items-center justify-center min-h-screen bg-background px-4">
+      <div className="bg-card p-6 rounded-2xl shadow-md w-full max-w-md">
+        <h1 className="text-xl font-semibold text-center mb-4 text-foreground">
           {isLogin ? "Entrar na sua conta" : "Criar uma conta"}
         </h1>
 
@@ -66,7 +66,7 @@ export default function AuthPage() {
             placeholder="E-mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border rounded-lg px-3 py-2"
+            className="border border-border rounded-lg px-3 py-2 bg-background text-foreground"
             required
           />
           <input
@@ -74,29 +74,30 @@ export default function AuthPage() {
             placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border rounded-lg px-3 py-2"
+            className="border border-border rounded-lg px-3 py-2 bg-background text-foreground"
             required
           />
 
           <button
             type="submit"
-            className="bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
+            className="bg-primary text-primary-foreground py-2 rounded-lg hover:opacity-90 transition"
           >
             {isLogin ? "Entrar" : "Cadastrar"}
           </button>
         </form>
 
-        <p className="text-sm text-center mt-4">
+        <p className="text-sm text-center mt-4 text-foreground">
           {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}{" "}
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-purple-600 font-medium"
+            className="text-primary font-medium"
+            type="button"
           >
             {isLogin ? "Criar" : "Entrar"}
           </button>
         </p>
 
-        {message && <p className="text-center mt-3 text-gray-700">{message}</p>}
+        {message && <p className="text-center mt-3 text-foreground">{message}</p>}
       </div>
     </div>
   )
