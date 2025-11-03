@@ -3,6 +3,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,8 +17,37 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { messages } = await req.json();
-    console.log("📩 Mensagens recebidas:", messages);
+    // Validate input with zod schema
+    const messageSchema = z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string().min(1, 'Content cannot be empty').max(10000, 'Content too long'),
+      images: z.array(z.string()).max(10, 'Too many images').optional()
+    });
+
+    const requestSchema = z.object({
+      messages: z.array(messageSchema).min(1, 'At least one message required').max(100, 'Too many messages')
+    });
+
+    const body = await req.json();
+    const validation = requestSchema.safeParse(body);
+    
+    if (!validation.success) {
+      console.error("❌ Validation error:", validation.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input',
+          details: validation.error.errors[0].message 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
+    }
+    
+    const { messages } = validation.data;
+    // Sanitized logging - don't expose full message content
+    console.log("📩 Processing", messages.length, "messages from user");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

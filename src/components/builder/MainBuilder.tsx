@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { SendHorizonal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import CodePreview from "@/components/builder/CodePreview";
 
 interface Message {
@@ -10,6 +13,8 @@ interface Message {
 }
 
 const MainBuilder = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -20,6 +25,34 @@ const MainBuilder = () => {
   const [input, setInput] = useState("");
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Authentication check
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Acesso negado",
+          description: "Você precisa estar logado para acessar o construtor.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -30,23 +63,14 @@ const MainBuilder = () => {
     setIsGenerating(true);
 
     try {
-      // Chamar o edge function com todo o histórico de mensagens
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, newMessage],
-        }),
+      // Use supabase.functions.invoke for authenticated calls
+      const { data, error } = await supabase.functions.invoke('generate-code', {
+        body: { messages: [...messages, newMessage] }
       });
 
-      if (!response.ok) {
-        throw new Error('Erro ao gerar código');
+      if (error) {
+        throw error;
       }
-
-      const data = await response.json();
       
       // Verificar o tipo de resposta da IA
       if (data.type === 'code' && data.code) {
@@ -87,6 +111,17 @@ const MainBuilder = () => {
       setIsGenerating(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <Sparkles className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen">

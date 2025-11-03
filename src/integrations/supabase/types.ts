@@ -58,7 +58,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_published_projects: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          thumbnail: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
