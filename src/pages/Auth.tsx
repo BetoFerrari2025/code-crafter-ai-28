@@ -29,24 +29,36 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         // 🔐 LOGIN
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (error) throw error
 
-        setMessage("✅ Login realizado com sucesso!")
-        navigate("/") // redireciona para home
+        // Aguardar a sessão ser estabelecida
+        if (data.session) {
+          setMessage("✅ Login realizado com sucesso!")
+          setTimeout(() => navigate("/"), 100)
+        }
       } else {
         // 🆕 CADASTRO
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
         })
         if (error) throw error
 
-        setMessage("✅ Conta criada com sucesso! Verifique seu e-mail.")
-        navigate("/") // redireciona para home
+        // Aguardar a sessão ser estabelecida
+        if (data.session) {
+          setMessage("✅ Conta criada com sucesso!")
+          setTimeout(() => navigate("/"), 100)
+        } else {
+          setMessage("✅ Conta criada! Faça login para continuar.")
+          setIsLogin(true)
+        }
       }
     } catch (err: any) {
       setMessage(`❌ ${err.message}`)
@@ -102,4 +114,3 @@ export default function AuthPage() {
     </div>
   )
 }
-
