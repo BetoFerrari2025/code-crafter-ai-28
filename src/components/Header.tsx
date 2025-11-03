@@ -38,7 +38,7 @@ const Header = () => {
         title: "Logout realizado",
         description: "Você saiu da sua conta com sucesso.",
       });
-      navigate("/auth");
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Erro ao sair",
