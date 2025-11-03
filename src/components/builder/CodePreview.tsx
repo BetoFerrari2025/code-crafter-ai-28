@@ -88,6 +88,7 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
           <head>
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com; style-src 'unsafe-inline' https://cdn.tailwindcss.com; img-src https: data: blob:; font-src https: data:;" />
             <title>Preview</title>
             <script src="https://cdn.tailwindcss.com"></script>
             <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -296,7 +297,7 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
                       srcDoc={previewHtml}
                       className="w-full h-[80vh] border-0 rounded-md"
                       title="Preview"
-                      sandbox="allow-scripts allow-forms allow-same-origin"
+                      sandbox="allow-scripts"
                     />
                   ) : isEditing ? (
                     <textarea
