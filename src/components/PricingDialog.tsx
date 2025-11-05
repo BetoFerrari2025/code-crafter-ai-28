@@ -26,7 +26,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         "Funções e permissões do usuário"
       ],
       buttonVariant: "default" as const,
-      link: "https://global.plumify.com.br/5lzyszdvht"
+      link: "https://buy.stripe.com/test_8x2bJ2fo09xqfxj9wX0VO00"
     },
     {
       name: "Pró",
@@ -42,7 +42,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         "Modelos de design"
       ],
       buttonVariant: "outline" as const,
-      link: "https://global.plumify.com.br/zu6hf"
+      link: "https://buy.stripe.com/test_6oU5kE6Ru8tm4SFeRh0VO01"
     },
     {
       name: "Premium",
@@ -59,7 +59,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         "Sistemas de design personalizados"
       ],
       buttonVariant: "outline" as const,
-      link: "https://global.plumify.com.br/u83c1"
+      link: "https://buy.stripe.com/test_eVqdRaejW4d670N10r0VO02"
     },
   ];
 
