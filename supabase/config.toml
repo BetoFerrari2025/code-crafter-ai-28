@@ -2,3 +2,6 @@ project_id = "aasvautyhdnecovotkoi"
 
 [functions.generate-code]
 verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
