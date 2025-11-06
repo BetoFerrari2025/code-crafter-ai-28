@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ManageSubscriptionDialog from "@/components/ManageSubscriptionDialog";
 
 interface Subscription {
   id: string;
@@ -22,6 +23,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
+  const [showManageDialog, setShowManageDialog] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -37,6 +40,7 @@ export default function Dashboard() {
       }
 
       setUserEmail(user.email || "");
+      setUserId(user.id);
       await fetchSubscription(user.id);
     } catch (error) {
       console.error("Auth check error:", error);
@@ -144,6 +148,18 @@ export default function Dashboard() {
                   <span className="text-sm font-medium">Current Period End</span>
                   <span className="text-sm">{formatDate(subscription.current_period_end)}</span>
                 </div>
+                {subscription.status === "active" && (
+                  <div className="pt-4 border-t">
+                    <Button
+                      onClick={() => setShowManageDialog(true)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Manage Subscription
+                    </Button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center py-8">
@@ -173,6 +189,20 @@ export default function Dashboard() {
           </Card>
         )}
       </div>
+
+      {subscription && subscription.stripe_subscription_id && (
+        <ManageSubscriptionDialog
+          open={showManageDialog}
+          onOpenChange={setShowManageDialog}
+          currentPlan={subscription.plan_name}
+          subscriptionId={subscription.stripe_subscription_id}
+          onSuccess={() => {
+            if (userId) {
+              fetchSubscription(userId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

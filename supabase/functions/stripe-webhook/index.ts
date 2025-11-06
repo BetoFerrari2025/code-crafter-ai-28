@@ -85,7 +85,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('Error processing webhook:', err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: err instanceof Error ? err.message : "An unknown error occurred" }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
