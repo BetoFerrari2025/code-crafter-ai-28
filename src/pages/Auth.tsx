@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabaseClient"
+import { Eye, EyeOff } from "lucide-react"
+import { z } from "zod"
+import { toast } from "@/hooks/use-toast"
+
+const authSchema = z.object({
+  email: z.string().trim().email({ message: "E-mail inválido" }).max(255, { message: "E-mail muito longo" }),
+  password: z.string().min(6, { message: "Senha deve ter no mínimo 6 caracteres" }).max(100, { message: "Senha muito longa" }),
+  phone: z.string().trim().regex(/^\+?[1-9]\d{1,14}$/, { message: "Número de celular inválido" }).optional().or(z.literal("")),
+});
 
 export default function AuthPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [phone, setPhone] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [message, setMessage] = useState("")
   const navigate = useNavigate()
@@ -27,6 +38,23 @@ export default function AuthPage() {
     setMessage("")
 
     try {
+      // Validação dos campos
+      const validationResult = authSchema.safeParse({ 
+        email, 
+        password, 
+        phone: isLogin ? "" : phone 
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: "Erro de validação",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (isLogin) {
         // 🔐 LOGIN
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -46,7 +74,10 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              phone: phone || undefined,
+            }
           }
         })
         if (error) throw error
@@ -81,14 +112,34 @@ export default function AuthPage() {
             className="border border-border rounded-lg px-3 py-2 bg-background text-foreground"
             required
           />
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border border-border rounded-lg px-3 py-2 bg-background text-foreground"
-            required
-          />
+          
+          {!isLogin && (
+            <input
+              type="tel"
+              placeholder="Número de Celular (opcional)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="border border-border rounded-lg px-3 py-2 bg-background text-foreground"
+            />
+          )}
+
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border border-border rounded-lg px-3 py-2 pr-10 bg-background text-foreground w-full"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           <button
             type="submit"
