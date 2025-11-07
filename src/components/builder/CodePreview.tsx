@@ -5,7 +5,6 @@ import {
   Tablet,
   Code2,
   Eye,
-  ExternalLink,
   Download,
   Loader2,
   Pencil,
@@ -129,12 +128,6 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
     }
   };
 
-  const handleOpenInBrowser = () => {
-    if (!previewHtml) return;
-    const blob = new Blob([previewHtml], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-  };
 
   const handleDownloadCode = () => {
     if (!displayCode) return;
@@ -178,15 +171,6 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
             </Button>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenInBrowser}
-            disabled={!previewHtml}
-            title="Abrir no navegador"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
 
           <Button
             variant="ghost"
