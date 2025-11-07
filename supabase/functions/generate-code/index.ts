@@ -59,6 +59,22 @@ serve(async (req: Request) => {
 IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie código React que reflita o design, layout e estrutura mostrados nas imagens.
 
 ========================================
+🚨 REGRA CRÍTICA DE IMAGENS - LEIA COM ATENÇÃO 🚨
+========================================
+
+⛔ NUNCA NUNCA NUNCA use:
+❌ Caminhos locais: ./img.png, /assets/foto.jpg, ../images/produto.jpg
+❌ URLs blob: blob:https://...
+❌ Caminhos relativos de qualquer tipo
+❌ Placeholders genéricos
+
+✅ SEMPRE SEMPRE SEMPRE use URLs HTTPS do Unsplash:
+✅ https://images.unsplash.com/photo-1234567890?w=800
+✅ Use photo-ids DIFERENTES para cada imagem
+✅ Adicione ?w=800 no final para otimizar
+✅ Exemplo completo: https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800
+
+========================================
 REGRA CRÍTICA: RETORNE APENAS CÓDIGO REACT
 ========================================
 
@@ -111,10 +127,17 @@ DESIGN PROFISSIONAL OBRIGATÓRIO
 ✅ Gradientes: bg-gradient-to-r from-cyan-500 to-blue-600
 ✅ Badges: bg-cyan-500 text-white px-4 py-2 rounded-full font-bold
 
-🖼️ IMAGENS ALTA QUALIDADE:
-✅ SEMPRE use Unsplash: https://images.unsplash.com/photo-XXX?w=800
+🖼️ IMAGENS ALTA QUALIDADE (REGRA OBRIGATÓRIA):
+⚠️ CRÍTICO: Use APENAS URLs HTTPS completas do Unsplash
+✅ Formato correto: https://images.unsplash.com/photo-[ID_UNICO]?w=800
+✅ Exemplos válidos:
+   - https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800 (camiseta masculina)
+   - https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800 (vestido feminino)
+   - https://images.unsplash.com/photo-1542272604-787c3835535d?w=800 (calça jeans)
+   - https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800 (jaqueta)
 ✅ Tamanho: h-48 md:h-64 object-cover w-full
 ✅ Hover: group-hover:scale-110 transition-transform duration-300
+❌ NUNCA use caminhos locais ou blob URLs
 
 🎯 HEADER PROFISSIONAL:
 ✅ bg-gray-900 ou bg-gradient-to-r from-gray-900 to-gray-800
@@ -145,14 +168,19 @@ EXEMPLO REFERÊNCIA
 
 import React from 'react';
 
-const cars = [
+const products = [
   {
     id: 1,
-    name: 'BMW X5 M Sport',
-    year: 2023,
-    price: 'R$ 546.000',
-    image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800'
+    name: 'Produto Exemplo 1',
+    price: 'R$ 299,90',
+    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'
   },
+  {
+    id: 2,
+    name: 'Produto Exemplo 2',
+    price: 'R$ 449,90',
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800'
+  }
 ];
 
 const App = () => {
@@ -178,21 +206,20 @@ const App = () => {
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {cars.map(car => (
-            <div key={car.id} className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer">
+          {products.map(product => (
+            <div key={product.id} className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer">
               <div className="relative h-64 overflow-hidden">
                 <img 
-                  src={car.image} 
-                  alt={car.name}
+                  src={product.image} 
+                  alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
                 />
                 <div className="absolute top-4 right-4 bg-cyan-500 text-white px-4 py-2 rounded-full font-bold shadow-lg">
-                  {car.price}
+                  {product.price}
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{car.name}</h3>
-                <p className="text-gray-600 mb-4">{car.year}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h3>
                 <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                   Ver Detalhes
                 </button>
@@ -214,13 +241,23 @@ const App = () => {
 export default App;
 
 ========================================
-REGRAS ABSOLUTAS
+🚨 REGRAS ABSOLUTAS - NÃO QUEBRE ESTAS REGRAS 🚨
 ========================================
 
-❌ NUNCA use imagens locais (./img.png, /assets/foto.jpg)
-✅ SEMPRE use URLs Unsplash HTTPS
-✅ Use diferentes photo-ids para cada imagem
-✅ Adicione ?w=800 para otimização
+⛔ IMAGENS - REGRAS CRÍTICAS:
+❌ PROIBIDO: caminhos locais (./img.png, /assets/foto.jpg, ../images/x.jpg)
+❌ PROIBIDO: URLs blob (blob:https://...)
+❌ PROIBIDO: placeholders genéricos sem URL real
+✅ OBRIGATÓRIO: URLs HTTPS completas do Unsplash
+✅ OBRIGATÓRIO: Formato https://images.unsplash.com/photo-[ID]?w=800
+✅ OBRIGATÓRIO: photo-ids DIFERENTES para cada imagem
+✅ OBRIGATÓRIO: Adicione ?w=800 no final para otimização
+
+EXEMPLOS DE URLs VÁLIDAS PARA PRODUTOS:
+- Roupas masculinas: https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800
+- Roupas femininas: https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800
+- Calçados: https://images.unsplash.com/photo-1542272604-787c3835535d?w=800
+- Acessórios: https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800
 
 Se há código anterior: EDITE mantendo todo código existente
 Se é novo: Crie do zero seguindo as regras de design
