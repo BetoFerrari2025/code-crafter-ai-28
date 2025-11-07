@@ -59,30 +59,31 @@ serve(async (req: Request) => {
 IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie código React que reflita o design, layout e estrutura mostrados nas imagens.
 
 ========================================
-REGRAS CRÍTICAS DE RESPOSTA
+REGRA CRÍTICA: RETORNE APENAS CÓDIGO REACT
 ========================================
 
-⚠️ SINTAXE PERFEITA OBRIGATÓRIA:
-✅ Código JavaScript/React VÁLIDO sem erros de sintaxe
-✅ Vírgulas, pontos e vírgulas corretos
-✅ Propriedades de objetos separadas por vírgula OU quebra de linha
-✅ Indentação consistente (2 ou 4 espaços)
-✅ NUNCA misture caracteres aleatórios entre propriedades
+⚠️ NUNCA retorne JSON!
+⚠️ NUNCA use markdown code blocks!
+⚠️ Retorne APENAS código React/JavaScript puro e válido!
 
-SEMPRE retorne JSON PURO sem markdown ou code blocks:
+CORRETO ✅:
+import React from 'react';
 
-Para COMANDOS (criar, gerar, fazer, construir, adicionar, modificar):
+const App = () => {
+  return <div>...</div>;
+};
+
+export default App;
+
+ERRADO ❌:
+\`\`\`jsx
+...
+\`\`\`
+
+ERRADO ❌:
 {
   "type": "code",
-  "message": "Aplicação criada com sucesso! Confira o preview.",
-  "code": "import React from 'react';\\n\\nconst App = () => {\\n  return <div>...</div>;\\n};\\n\\nexport default App;"
-}
-
-Para CONVERSAS (perguntas, cumprimentos, mensagens curtas):
-{
-  "type": "message",
-  "message": "Olá! Como posso ajudar você a criar sua aplicação?",
-  "code": null
+  "code": "..."
 }
 
 ========================================
@@ -293,10 +294,17 @@ CHECKLIST:
     
     let generatedCode = data.choices[0].message.content;
 
-    // Parse o JSON retornado pela IA para extrair o código
+    // Limpar markdown code blocks se existirem
+    generatedCode = generatedCode
+      .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
+      .replace(/```\n?/g, '');
+
+    // Tentar extrair código de JSON se a IA retornou JSON
     try {
       const parsed = JSON.parse(generatedCode);
       if (parsed.type === 'code' && parsed.code) {
+        generatedCode = parsed.code;
+      } else if (parsed.code) {
         generatedCode = parsed.code;
       }
     } catch {
@@ -305,9 +313,15 @@ CHECKLIST:
 
     // Limpar caracteres inválidos e erros comuns de sintaxe
     generatedCode = generatedCode
-      .replace(/,\s*n\s+/g, ',\n    ') // Corrige ",n    " para ",\n    "
-      .replace(/,n([a-zA-Z])/g, ',\n    $1') // Corrige ",n" seguido de letra
-      .replace(/\bn\s+([a-zA-Z]+):/g, '\n    $1:'); // Corrige "n prop:" para "\n    prop:"
+      .replace(/,\s*n\s+/g, ',\n    ')
+      .replace(/,n([a-zA-Z])/g, ',\n    $1')
+      .replace(/\bn\s+([a-zA-Z]+):/g, '\n    $1:')
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\'/g, "'")
+      .trim();
+
+    console.log('Código limpo e pronto para uso');
 
     return new Response(
       JSON.stringify({ code: generatedCode }),
