@@ -62,6 +62,13 @@ IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie c
 REGRAS CRÍTICAS DE RESPOSTA
 ========================================
 
+⚠️ SINTAXE PERFEITA OBRIGATÓRIA:
+✅ Código JavaScript/React VÁLIDO sem erros de sintaxe
+✅ Vírgulas, pontos e vírgulas corretos
+✅ Propriedades de objetos separadas por vírgula OU quebra de linha
+✅ Indentação consistente (2 ou 4 espaços)
+✅ NUNCA misture caracteres aleatórios entre propriedades
+
 SEMPRE retorne JSON PURO sem markdown ou code blocks:
 
 Para COMANDOS (criar, gerar, fazer, construir, adicionar, modificar):
@@ -295,6 +302,12 @@ CHECKLIST:
     } catch {
       // Se não for JSON, usa o conteúdo diretamente
     }
+
+    // Limpar caracteres inválidos e erros comuns de sintaxe
+    generatedCode = generatedCode
+      .replace(/,\s*n\s+/g, ',\n    ') // Corrige ",n    " para ",\n    "
+      .replace(/,n([a-zA-Z])/g, ',\n    $1') // Corrige ",n" seguido de letra
+      .replace(/\bn\s+([a-zA-Z]+):/g, '\n    $1:'); // Corrige "n prop:" para "\n    prop:"
 
     return new Response(
       JSON.stringify({ code: generatedCode }),
