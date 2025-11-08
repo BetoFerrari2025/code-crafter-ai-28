@@ -10,9 +10,13 @@ import {
   Pencil,
   Save,
   X,
+  ExternalLink,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as Babel from "@babel/standalone"; // 🔥 IMPORTANTE para renderização TSX
+import * as Babel from "@babel/standalone";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type ViewMode = "desktop" | "tablet" | "mobile";
 type DisplayMode = "code" | "preview";
@@ -29,6 +33,9 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>("");
+  const { toast } = useToast();
 
   // 🧠 --- LIMPA e PREPARA o código do preview ---
   useEffect(() => {
@@ -144,6 +151,60 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
     compilePreview(editedCode);
   };
 
+  const handleSaveAndShare = async () => {
+    if (!displayCode) return;
+    
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Login necessário",
+          description: "Faça login para salvar e compartilhar projetos.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([{
+          user_id: user.id,
+          name: 'Projeto ' + new Date().toLocaleDateString(),
+          code: displayCode,
+          is_published: true,
+        }])
+        .select('share_token')
+        .single();
+
+      if (error) throw error;
+
+      const url = `${window.location.origin}/shared/${data.share_token}`;
+      setShareUrl(url);
+      
+      // Copiar para clipboard
+      await navigator.clipboard.writeText(url);
+      
+      // Abrir em nova aba
+      window.open(url, '_blank');
+
+      toast({
+        title: "✅ Projeto salvo e compartilhado!",
+        description: "Link copiado e aberto em nova aba.",
+      });
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o projeto. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // --- RENDER ---
   return (
     <div className="flex-1 h-full bg-background flex flex-col">
@@ -180,6 +241,22 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
             title="Baixar código"
           >
             <Download className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSaveAndShare}
+            disabled={!displayCode || isSaving}
+            title="Salvar e abrir no navegador"
+            className="gap-2"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+            Abrir no Navegador
           </Button>
         </div>
 

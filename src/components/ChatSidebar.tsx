@@ -12,6 +12,7 @@ interface Message {
   content: string;
   isCode?: boolean;
   images?: string[];
+  isStatus?: boolean;
 }
 
 interface ChatSidebarProps {
@@ -68,71 +69,110 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageHistory = [...messages, userMessage];
     setInput("");
     const imagesToSend = [...selectedImages];
     setSelectedImages([]);
     setIsLoading(true);
 
+    // Mensagem de status inicial
+    const statusMessageId = (Date.now() + 1).toString();
+    const statusMessage: Message = {
+      id: statusMessageId,
+      role: "assistant",
+      content: "🤔 Analisando sua solicitação...",
+      isStatus: true,
+    };
+    setMessages((prev) => [...prev, statusMessage]);
+
     try {
-      const { data, error } = await supabase.functions.invoke('generate-code', {
-        body: {
-          messages: [
-            ...messages.filter(m => !m.isCode).map(m => ({
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-code`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: messageHistory.filter(m => !m.isCode && !m.isStatus).map(m => ({
               role: m.role,
               content: m.content,
               images: m.images
-            })),
-            { role: 'user', content: input || "Gere código baseado nas imagens enviadas", images: imagesToSend }
-          ]
+            }))
+          })
         }
-      });
+      );
 
-      if (error) throw error;
+      if (!response.ok) throw new Error('Failed to generate');
+      if (!response.body) throw new Error('No response body');
 
-      console.log('Resposta recebida:', data);
-
-      // Extrair o código React puro do JSON
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
       let generatedCode = '';
-      
-      if (typeof data.code === 'string') {
-        try {
-          // Tenta fazer parse do JSON retornado pela IA
-          const parsed = JSON.parse(data.code);
-          if (parsed.type === 'code' && parsed.code) {
-            generatedCode = parsed.code;
-            console.log('Código extraído do JSON:', generatedCode.substring(0, 100));
-          } else {
-            generatedCode = data.code;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line.startsWith(':')) continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            // Remover mensagem de status e adicionar mensagem de sucesso
+            setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
+            setMessages((prev) => [...prev, {
+              id: (Date.now() + 2).toString(),
+              role: "assistant",
+              content: "✅ Código gerado com sucesso! Veja o preview ao lado.",
+            }]);
+            
+            toast({
+              title: "Código gerado!",
+              description: "O código foi gerado com sucesso. Confira no preview.",
+            });
+            continue;
           }
-        } catch (e) {
-          console.log('Não é JSON, usando código diretamente');
-          generatedCode = data.code;
+
+          try {
+            const parsed = JSON.parse(data);
+            
+            if (parsed.type === 'status') {
+              // Atualizar mensagem de status
+              setMessages((prev) => 
+                prev.map(m => m.id === statusMessageId 
+                  ? { ...m, content: parsed.status }
+                  : m
+                )
+              );
+            } else if (parsed.type === 'code') {
+              generatedCode = parsed.code;
+              if (onCodeGenerated) {
+                onCodeGenerated(generatedCode);
+              }
+            }
+          } catch (e) {
+            console.error('Parse error:', e);
+          }
         }
       }
 
-      if (onCodeGenerated && generatedCode) {
-        onCodeGenerated(generatedCode);
-      }
-
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "✓ Código gerado! Veja o preview ao lado.",
-      };
-      
-      setMessages((prev) => [...prev, aiMessage]);
-
-      toast({
-        title: "Código gerado!",
-        description: "O código foi gerado com sucesso. Confira no preview.",
-      });
     } catch (error) {
       console.error('Error generating code:', error);
+      
+      setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Desculpe, ocorreu um erro ao gerar o código. Por favor, tente novamente.",
+        content: "❌ Desculpe, ocorreu um erro ao gerar o código. Por favor, tente novamente.",
       };
       
       setMessages((prev) => [...prev, errorMessage]);

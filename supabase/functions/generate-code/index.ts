@@ -58,6 +58,22 @@ serve(async (req: Request) => {
 
 IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie código React que reflita o design, layout e estrutura mostrados nas imagens.
 
+🔧 REGRA CRÍTICA DE CORREÇÕES E MODIFICAÇÕES:
+========================================
+⚠️ Quando o usuário pedir para CORRIGIR, MODIFICAR ou AJUSTAR algo:
+✅ SEMPRE faça apenas a correção/modificação solicitada no código existente
+✅ MANTENHA todo o resto do código intacto
+✅ NÃO recrie a aplicação inteira do zero
+✅ NÃO ignore o código anterior que foi fornecido
+
+Exemplo CORRETO de correção:
+Usuário: "corrija o botão porque não está funcionando"
+Você: [modifica apenas a função do botão mantendo todo o resto]
+
+Exemplo ERRADO:
+Usuário: "corrija o botão"
+Você: [cria uma aplicação completamente nova] ❌ NUNCA FAÇA ISSO!
+
 ========================================
 🚨 REGRA CRÍTICA DE IMAGENS - LEIA COM ATENÇÃO 🚨
 ========================================
@@ -304,6 +320,35 @@ CHECKLIST:
 
     console.log("📸 Mensagens formatadas com", messages.filter((m: any) => m.images?.length > 0).length, "imagens");
 
+    // Extrair o código atual do último pedido (se houver) para contexto
+    let currentCode = '';
+    const lastUserMessage = messages[messages.length - 1];
+    if (lastUserMessage && messages.length > 1) {
+      // Se não é a primeira mensagem, tenta extrair código existente das mensagens anteriores
+      for (let i = messages.length - 2; i >= 0; i--) {
+        if (messages[i].role === 'assistant' || messages[i].content?.includes('import React')) {
+          currentCode = messages[i].content || '';
+          break;
+        }
+      }
+    }
+
+    // Adicionar contexto do código atual se existir
+    const contextualizedMessages = [...formattedMessages];
+    if (currentCode && lastUserMessage) {
+      const lastMsg = contextualizedMessages[contextualizedMessages.length - 1];
+      const originalContent = typeof lastMsg.content === 'string' ? lastMsg.content : lastMsg.content[0]?.text || '';
+      
+      // Se parece ser um pedido de correção/modificação
+      if (/(corrija|corrige|ajusta|ajuste|modifica|modifique|mude|altere|conserte|conserta|arruma|arrume)/i.test(originalContent)) {
+        if (typeof lastMsg.content === 'string') {
+          lastMsg.content = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido, mantendo todo o resto do código!`;
+        } else if (Array.isArray(lastMsg.content)) {
+          lastMsg.content[0].text = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido, mantendo todo o resto do código!`;
+        }
+      }
+    }
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -314,9 +359,10 @@ CHECKLIST:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...formattedMessages
+          ...contextualizedMessages
         ],
         temperature: 0.7,
+        stream: true, // Ativar streaming
       }),
     });
 
@@ -326,46 +372,83 @@ CHECKLIST:
       throw new Error(`AI API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log('AI response received');
-    
-    let generatedCode = data.choices[0].message.content;
+    // Retornar stream SSE
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('No reader');
 
-    // Limpar markdown code blocks se existirem
-    generatedCode = generatedCode
-      .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
-      .replace(/```\n?/g, '');
+          let buffer = '';
+          let generatedCode = '';
 
-    // Tentar extrair código de JSON se a IA retornou JSON
-    try {
-      const parsed = JSON.parse(generatedCode);
-      if (parsed.type === 'code' && parsed.code) {
-        generatedCode = parsed.code;
-      } else if (parsed.code) {
-        generatedCode = parsed.code;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += new TextDecoder().decode(value);
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.trim() || line.startsWith(':')) continue;
+              if (!line.startsWith('data: ')) continue;
+
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                // Limpar código final
+                let cleanCode = generatedCode
+                  .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
+                  .replace(/```\n?/g, '')
+                  .replace(/,\s*n\s+/g, ',\n    ')
+                  .replace(/\\n/g, '\n')
+                  .replace(/\\"/g, '"')
+                  .trim();
+
+                // Enviar código final
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
+                controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+                controller.close();
+                return;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta?.content;
+                
+                if (delta) {
+                  generatedCode += delta;
+                  
+                  // Enviar status de progresso baseado no conteúdo
+                  let status = 'Pensando...';
+                  if (generatedCode.includes('import')) status = '📦 Importando bibliotecas...';
+                  else if (generatedCode.includes('const') || generatedCode.includes('function')) status = '🔧 Criando componentes...';
+                  else if (generatedCode.includes('className')) status = '🎨 Estilizando interface...';
+                  else if (generatedCode.includes('return')) status = '✨ Finalizando estrutura...';
+                  
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', status })}\n\n`));
+                }
+              } catch (e) {
+                console.error('Parse error:', e);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.error(error);
+        }
       }
-    } catch {
-      // Se não for JSON, usa o conteúdo diretamente
-    }
+    });
 
-    // Limpar caracteres inválidos e erros comuns de sintaxe
-    generatedCode = generatedCode
-      .replace(/,\s*n\s+/g, ',\n    ')
-      .replace(/,n([a-zA-Z])/g, ',\n    $1')
-      .replace(/\bn\s+([a-zA-Z]+):/g, '\n    $1:')
-      .replace(/\\n/g, '\n')
-      .replace(/\\"/g, '"')
-      .replace(/\\'/g, "'")
-      .trim();
-
-    console.log('Código limpo e pronto para uso');
-
-    return new Response(
-      JSON.stringify({ code: generatedCode }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (error) {
     console.error("💥 Erro no generate-code:", error);
     const message = error instanceof Error ? error.message : "Erro desconhecido";
