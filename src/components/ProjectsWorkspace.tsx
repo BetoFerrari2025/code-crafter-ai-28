@@ -17,7 +17,8 @@ const ProjectsWorkspace = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('updated');
+const [sortBy, setSortBy] = useState('updated');
+  const [creatorFilter, setCreatorFilter] = useState('me');
   const { toast } = useToast();
 
   const fetchProjects = async () => {
@@ -30,10 +31,15 @@ const ProjectsWorkspace = () => {
         return;
       }
 
-      let query = supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id);
+      let query = supabase.from('projects').select('*');
+
+      // Filter by creator
+      if (creatorFilter === 'me') {
+        query = query.eq('user_id', user.id);
+      } else {
+        // Show all published projects OR user's own projects
+        query = query.or(`user_id.eq.${user.id},is_published.eq.true`);
+      }
 
       // Apply sorting
       if (sortBy === 'updated') {
@@ -63,7 +69,7 @@ const ProjectsWorkspace = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, [sortBy]);
+  }, [sortBy, creatorFilter]);
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -118,7 +124,7 @@ const ProjectsWorkspace = () => {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all">
+          <Select value={creatorFilter} onValueChange={setCreatorFilter}>
             <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue />
             </SelectTrigger>
