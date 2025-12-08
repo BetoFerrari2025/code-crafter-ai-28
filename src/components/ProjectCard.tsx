@@ -139,6 +139,16 @@ const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
               </p>
             </div>
 
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={handleEdit}
+              className="shrink-0"
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Editar
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
