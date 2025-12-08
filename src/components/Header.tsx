@@ -79,9 +79,12 @@ const Header = () => {
             >
               Preços
             </button>
-            <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
-              Empresarial
-            </a>
+            <button 
+              onClick={() => navigate("/gallery")}
+              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth"
+            >
+              Galeria
+            </button>
             <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
               Aprender
             </a>
