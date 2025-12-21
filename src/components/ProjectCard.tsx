@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import ProjectThumbnailPreview from './ProjectThumbnailPreview';
 
 interface ProjectCardProps {
   project: {
@@ -29,6 +30,7 @@ interface ProjectCardProps {
     name: string;
     description: string | null;
     thumbnail: string | null;
+    code: string | null;
     is_published: boolean;
     share_token: string | null;
     updated_at: string;
@@ -100,27 +102,20 @@ const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer">
       <CardContent className="p-0">
-        {/* Thumbnail */}
+        {/* Thumbnail with Code Preview */}
         <div 
-          className="relative aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center"
+          className="relative aspect-video overflow-hidden"
           onClick={handleEdit}
         >
-          {project.thumbnail ? (
-            <img 
-              src={project.thumbnail} 
-              alt={project.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="text-6xl font-bold text-muted-foreground/20">
-              {project.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <ProjectThumbnailPreview 
+            code={project.code} 
+            projectName={project.name} 
+          />
           
           {project.is_published && (
             <Badge 
               variant="secondary" 
-              className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm"
+              className="absolute top-3 left-3 bg-background/90 backdrop-blur-sm z-10"
             >
               Publicado
             </Badge>
