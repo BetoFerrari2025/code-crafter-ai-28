@@ -156,9 +156,10 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
     
     setIsSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!user) {
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
         toast({
           title: "Login necessário",
           description: "Faça login para salvar e compartilhar projetos.",
@@ -167,20 +168,30 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
         return;
       }
 
-      const { data, error } = await supabase
+      const user = session.user;
+
+      // Insert project
+      const { data: insertData, error: insertError } = await supabase
         .from('projects')
-        .insert([{
+        .insert({
           user_id: user.id,
-          name: 'Projeto ' + new Date().toLocaleDateString(),
+          name: 'Projeto ' + new Date().toLocaleDateString('pt-BR'),
           code: displayCode,
           is_published: true,
-        }])
-        .select('share_token')
+        })
+        .select('id, share_token')
         .single();
 
-      if (error) throw error;
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
 
-      const url = `${window.location.origin}/shared/${data.share_token}`;
+      if (!insertData?.share_token) {
+        throw new Error('Token não gerado');
+      }
+
+      const url = `${window.location.origin}/shared/${insertData.share_token}`;
       setShareUrl(url);
       
       // Copiar para clipboard
@@ -193,11 +204,11 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
         title: "✅ Projeto salvo e compartilhado!",
         description: "Link copiado e aberto em nova aba.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving project:', error);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar o projeto. Tente novamente.",
+        description: error?.message || "Não foi possível salvar o projeto. Tente novamente.",
         variant: "destructive",
       });
     } finally {
