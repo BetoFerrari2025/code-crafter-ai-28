@@ -1,9 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Code2, Sparkles, Loader2, Image as ImageIcon, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Send, Code2, Sparkles, Loader2, Image as ImageIcon, X, AlertTriangle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -13,13 +12,16 @@ interface Message {
   isCode?: boolean;
   images?: string[];
   isStatus?: boolean;
+  isError?: boolean;
+  errorDetails?: string;
 }
 
 interface ChatSidebarProps {
   onCodeGenerated?: (code: string) => void;
+  currentCode?: string;
 }
 
-const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
+const ChatSidebar = ({ onCodeGenerated, currentCode }: ChatSidebarProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -30,8 +32,16 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [lastErrorMessage, setLastErrorMessage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -58,18 +68,24 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSend = async () => {
-    if ((!input.trim() && selectedImages.length === 0) || isLoading) return;
+  const handleRetryWithError = useCallback((errorDetails: string) => {
+    // Prepara uma mensagem de correção com o erro específico
+    const fixMessage = `Por favor, corrija o seguinte erro no código:\n\n${errorDetails}`;
+    setInput(fixMessage);
+  }, []);
+
+  const handleSend = async (overrideInput?: string) => {
+    const messageContent = overrideInput || input;
+    if ((!messageContent.trim() && selectedImages.length === 0) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input || "Gere código baseado nas imagens enviadas",
+      content: messageContent || "Gere código baseado nas imagens enviadas",
       images: selectedImages.length > 0 ? selectedImages : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageHistory = [...messages, userMessage];
     setInput("");
     const imagesToSend = [...selectedImages];
     setSelectedImages([]);
@@ -84,8 +100,37 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
       isStatus: true,
     };
     setMessages((prev) => [...prev, statusMessage]);
+    scrollToBottom();
 
     try {
+      // Prepara as mensagens para enviar incluindo o código atual se existir
+      const messagesToSend = messages
+        .filter(m => !m.isCode && !m.isStatus && !m.isError)
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+          images: m.images
+        }));
+      
+      // Adiciona a mensagem atual do usuário
+      messagesToSend.push({
+        role: 'user',
+        content: messageContent || "Gere código baseado nas imagens enviadas",
+        images: imagesToSend.length > 0 ? imagesToSend : undefined,
+      });
+
+      // Se temos código atual e a mensagem parece ser uma correção, adiciona contexto
+      const isCorrection = /(corrija|corrige|ajusta|ajuste|modifica|modifique|mude|altere|conserte|conserta|arruma|arrume|erro|bug|problema|não funciona|não está funcionando)/i.test(messageContent);
+      
+      if (currentCode && isCorrection) {
+        // Substitui a última mensagem com o contexto do código atual
+        const lastIndex = messagesToSend.length - 1;
+        messagesToSend[lastIndex] = {
+          ...messagesToSend[lastIndex],
+          content: `${messageContent}\n\n⚠️ CÓDIGO ATUAL QUE DEVE SER CORRIGIDO (NÃO CRIE UM NOVO, APENAS MODIFIQUE):\n\n${currentCode}`,
+        };
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-code`,
         {
@@ -94,13 +139,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({
-            messages: messageHistory.filter(m => !m.isCode && !m.isStatus).map(m => ({
-              role: m.role,
-              content: m.content,
-              images: m.images
-            }))
-          })
+          body: JSON.stringify({ messages: messagesToSend })
         }
       );
 
@@ -134,10 +173,13 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
               content: "✅ Código gerado com sucesso! Veja o preview ao lado.",
             }]);
             
+            setLastErrorMessage("");
+            
             toast({
               title: "Código gerado!",
               description: "O código foi gerado com sucesso. Confira no preview.",
             });
+            scrollToBottom();
             continue;
           }
 
@@ -173,6 +215,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: "❌ Desculpe, ocorreu um erro ao gerar o código. Por favor, tente novamente.",
+        isError: true,
       };
       
       setMessages((prev) => [...prev, errorMessage]);
@@ -184,6 +227,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
       });
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
   };
 
@@ -214,15 +258,19 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
                 className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
+                    : message.isError
+                    ? "bg-destructive text-destructive-foreground"
                     : "bg-gradient-hero text-white"
                 }`}
               >
-                {message.role === "user" ? "U" : <Code2 className="h-4 w-4" />}
+                {message.role === "user" ? "U" : message.isError ? <AlertTriangle className="h-4 w-4" /> : <Code2 className="h-4 w-4" />}
               </div>
-               <div
+              <div
                 className={`rounded-2xl px-4 py-3 max-w-[80%] ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
+                    : message.isError
+                    ? "bg-destructive/10 text-destructive border border-destructive/20"
                     : "bg-sidebar-accent text-sidebar-foreground"
                 }`}
               >
@@ -245,6 +293,19 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
                 ) : (
                   <p className="text-sm">{message.content}</p>
                 )}
+                
+                {/* Botão de retry para mensagens de erro */}
+                {message.isError && message.errorDetails && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 gap-1"
+                    onClick={() => handleRetryWithError(message.errorDetails!)}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Tentar corrigir
+                  </Button>
+                )}
               </div>
             </div>
           ))}
@@ -262,6 +323,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
               </div>
             </div>
           )}
+          <div ref={scrollRef} />
         </div>
       </ScrollArea>
 
@@ -303,7 +365,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
                 handleSend();
               }
             }}
-            placeholder="Descreva o que você quer Fazer..."
+            placeholder="Descreva o que você quer fazer..."
             className="min-h-[100px] pr-24 resize-none"
           />
           <div className="absolute bottom-3 right-3 flex gap-2">
@@ -318,7 +380,7 @@ const ChatSidebar = ({ onCodeGenerated }: ChatSidebarProps) => {
               <ImageIcon className="h-4 w-4" />
             </Button>
             <Button
-              onClick={handleSend}
+              onClick={() => handleSend()}
               size="icon"
               className="rounded-full"
               disabled={(!input.trim() && selectedImages.length === 0) || isLoading}
