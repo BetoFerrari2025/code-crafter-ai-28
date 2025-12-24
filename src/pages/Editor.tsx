@@ -55,10 +55,8 @@ const Editor = () => {
     <div className="h-screen flex flex-col bg-background">
       <Header />
       <div className="flex-1 flex pt-16 overflow-hidden">
-        {/* Sidebar com o chat/gerador */}
-        <ChatSidebar onCodeGenerated={setGeneratedCode} />
-        {/* Preview do código */}
-        <CodePreview generatedCode={generatedCode} />
+        <ChatSidebar onCodeGenerated={setGeneratedCode} currentCode={generatedCode} />
+        <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} />
       </div>
     </div>
   );
