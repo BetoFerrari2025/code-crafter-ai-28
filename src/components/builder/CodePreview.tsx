@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Monitor,
   Smartphone,
@@ -36,6 +37,7 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>("");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // 🧠 --- LIMPA e PREPARA o código do preview ---
   useEffect(() => {
@@ -159,12 +161,11 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
-        console.error('Session error:', sessionError);
         toast({
           title: "Login necessário",
-          description: "Faça login para salvar e compartilhar projetos.",
-          variant: "destructive",
+          description: "Redirecionando para a página de login...",
         });
+        navigate("/auth");
         return;
       }
 
