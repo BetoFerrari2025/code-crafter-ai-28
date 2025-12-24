@@ -165,7 +165,7 @@ const CodePreview = ({ generatedCode, isGenerating }: CodePreviewProps) => {
           title: "Login necessário",
           description: "Redirecionando para a página de login...",
         });
-        navigate("/auth");
+        navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
         return;
       }
 
