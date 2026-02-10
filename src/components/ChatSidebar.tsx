@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,9 +19,11 @@ interface Message {
 interface ChatSidebarProps {
   onCodeGenerated?: (code: string) => void;
   currentCode?: string;
+  fixRequest?: string;
+  onFixRequestHandled?: () => void;
 }
 
-const ChatSidebar = ({ onCodeGenerated, currentCode }: ChatSidebarProps) => {
+const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled }: ChatSidebarProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -37,6 +39,14 @@ const ChatSidebar = ({ onCodeGenerated, currentCode }: ChatSidebarProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Auto-send fix request from preview errors
+  useEffect(() => {
+    if (fixRequest && !isLoading) {
+      const fixMsg = `Por favor, corrija o seguinte erro de compilação no código:\n\n${fixRequest}`;
+      handleSend(fixMsg);
+      if (onFixRequestHandled) onFixRequestHandled();
+    }
+  }, [fixRequest]);
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
