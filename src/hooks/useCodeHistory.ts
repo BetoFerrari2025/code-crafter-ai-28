@@ -57,6 +57,14 @@ export const useCodeHistory = () => {
     return null;
   }, [currentIndex, history]);
 
+  const restoreVersion = useCallback((index: number): CodeVersion | null => {
+    if (index >= 0 && index < history.length) {
+      setCurrentIndex(index);
+      return history[index];
+    }
+    return null;
+  }, [history]);
+
   const getCurrentVersion = useCallback((): CodeVersion | null => {
     if (currentIndex >= 0 && currentIndex < history.length) {
       return history[currentIndex];
@@ -73,6 +81,7 @@ export const useCodeHistory = () => {
     addVersion,
     undo,
     redo,
+    restoreVersion,
     getCurrentVersion,
     canUndo,
     canRedo,

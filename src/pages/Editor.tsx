@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 
 const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
+  const [fixRequest, setFixRequest] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -55,8 +56,8 @@ const Editor = () => {
     <div className="h-screen flex flex-col bg-background">
       <Header />
       <div className="flex-1 flex pt-16 overflow-hidden">
-        <ChatSidebar onCodeGenerated={setGeneratedCode} currentCode={generatedCode} />
-        <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} />
+        <ChatSidebar onCodeGenerated={setGeneratedCode} currentCode={generatedCode} fixRequest={fixRequest} onFixRequestHandled={() => setFixRequest("")} />
+        <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
       </div>
     </div>
   );
