@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Settings, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ManageSubscriptionDialog from "@/components/ManageSubscriptionDialog";
+import ProjectConnections from "@/components/ProjectConnections";
 
 interface Subscription {
   id: string;
@@ -25,6 +27,8 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const [showManageDialog, setShowManageDialog] = useState(false);
+  const [creditsUsed, setCreditsUsed] = useState(0);
+  const [maxCredits, setMaxCredits] = useState(5);
 
   useEffect(() => {
     checkAuth();
@@ -41,7 +45,7 @@ export default function Dashboard() {
 
       setUserEmail(user.email || "");
       setUserId(user.id);
-      await fetchSubscription(user.id);
+      await Promise.all([fetchSubscription(user.id), fetchCredits(user.id)]);
     } catch (error) {
       console.error("Auth check error:", error);
       toast({
@@ -71,6 +75,24 @@ export default function Dashboard() {
         description: "Failed to load subscription details",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchCredits = async (uid: string) => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("user_daily_credits")
+        .select("credits_used, max_credits")
+        .eq("user_id", uid)
+        .eq("usage_date", today)
+        .maybeSingle();
+      if (data) {
+        setCreditsUsed(data.credits_used);
+        setMaxCredits(data.max_credits);
+      }
+    } catch (e) {
+      console.error("Error fetching credits:", e);
     }
   };
 
@@ -122,6 +144,26 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6">
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              Créditos Diários
+            </CardTitle>
+            <CardDescription>Seus créditos de geração de código restantes para hoje</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl font-bold text-primary">{maxCredits - creditsUsed}</span>
+              <span className="text-sm text-muted-foreground">{creditsUsed}/{maxCredits} usados</span>
+            </div>
+            <Progress value={(creditsUsed / maxCredits) * 100} className="h-3" />
+            <p className="text-xs text-muted-foreground mt-2">
+              Os créditos reiniciam todos os dias à meia-noite.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Subscription Status</CardTitle>
@@ -188,6 +230,8 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        <ProjectConnections />
       </div>
 
       {subscription && subscription.stripe_subscription_id && (

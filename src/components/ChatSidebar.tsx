@@ -30,9 +30,10 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     {
       id: "1",
       role: "assistant",
-      content: "Olá! Estou pronto para ajudar você a criar seu aplicativo. O que você gostaria de construir hoje?",
+      content: "Olá! 👋 Estou pronto para criar seu app. Me diga o que você precisa!",
     },
   ]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
@@ -83,9 +84,19 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     setInput(fixMessage);
   }, []);
 
+  const promptSuggestions = [
+    "🛒 Crie uma loja virtual com carrinho",
+    "📋 Crie um dashboard de tarefas",
+    "🔐 Adicione login com email e senha",
+    "📊 Crie gráficos de analytics",
+    "💬 Crie um chat em tempo real",
+    "🎨 Melhore o design do app",
+  ];
+
   const handleSend = async (overrideInput?: string) => {
     const messageContent = overrideInput || input;
     if ((!messageContent.trim() && selectedImages.length === 0) || isLoading) return;
+    setShowSuggestions(false);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -294,14 +305,36 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
           
           {isLoading && (
             <div className="flex items-start gap-3 animate-fade-in">
-              <div className="w-8 h-8 rounded-full bg-gradient-hero flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-hero flex items-center justify-center flex-shrink-0 animate-pulse">
                 <Loader2 className="h-4 w-4 text-white animate-spin" />
               </div>
               <div className="flex-1 bg-sidebar-accent rounded-2xl px-4 py-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Pensando...</p>
-                  <p className="text-xs text-muted-foreground">Criando agora aguarde.</p>
+                  <p className="text-xs text-muted-foreground">Criando agora, aguarde.</p>
+                  <div className="flex gap-1 mt-2">
+                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {showSuggestions && messages.length <= 1 && !isLoading && (
+            <div className="animate-fade-in">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">💡 Sugestões rápidas:</p>
+              <div className="flex flex-wrap gap-2">
+                {promptSuggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSend(s)}
+                    className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-smooth border border-primary/20"
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             </div>
           )}
