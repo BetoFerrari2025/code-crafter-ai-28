@@ -4,6 +4,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,37 +18,78 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Validate input with zod schema
+    // Extract user from JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'unauthorized', message: 'Token de autenticação necessário.' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Get user from token
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'unauthorized', message: 'Sessão inválida.' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check credits using service role (SECURITY DEFINER function)
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: creditResult, error: creditError } = await adminClient.rpc('check_and_use_credit', {
+      p_user_id: user.id,
+    });
+
+    if (creditError) {
+      console.error("❌ Credit check error:", creditError);
+      throw new Error('Erro ao verificar créditos');
+    }
+
+    if (!creditResult.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: 'credits_exhausted',
+          message: `Você atingiu o limite de ${creditResult.max_credits} créditos diários. Faça upgrade do seu plano para continuar criando.`,
+          credits_used: creditResult.credits_used,
+          max_credits: creditResult.max_credits,
+          remaining: 0,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate input
     const messageSchema = z.object({
       role: z.enum(['user', 'assistant']),
-      content: z.string().min(1, 'Content cannot be empty').max(10000, 'Content too long'),
-      images: z.array(z.string()).max(10, 'Too many images').optional()
+      content: z.string().min(1).max(10000),
+      images: z.array(z.string()).max(10).optional()
     });
 
     const requestSchema = z.object({
-      messages: z.array(messageSchema).min(1, 'At least one message required').max(100, 'Too many messages')
+      messages: z.array(messageSchema).min(1).max(100)
     });
 
     const body = await req.json();
     const validation = requestSchema.safeParse(body);
     
     if (!validation.success) {
-      console.error("❌ Validation error:", validation.error.errors);
       return new Response(
-        JSON.stringify({ 
-          error: 'Invalid input',
-          details: validation.error.errors[0].message 
-        }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        }
+        JSON.stringify({ error: 'Invalid input', details: validation.error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
     const { messages } = validation.data;
-    // Sanitized logging - don't expose full message content
-    console.log("📩 Processing", messages.length, "messages from user");
+    console.log("📩 Processing", messages.length, "messages for user", user.id, "| Credits remaining:", creditResult.remaining);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -66,285 +108,69 @@ IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie c
 ✅ NÃO recrie a aplicação inteira do zero
 ✅ NÃO ignore o código anterior que foi fornecido
 
-Exemplo CORRETO de correção:
-Usuário: "corrija o botão porque não está funcionando"
-Você: [modifica apenas a função do botão mantendo todo o resto]
-
-Exemplo ERRADO:
-Usuário: "corrija o botão"
-Você: [cria uma aplicação completamente nova] ❌ NUNCA FAÇA ISSO!
-
 ========================================
-🚨 REGRA CRÍTICA DE IMAGENS - LEIA COM ATENÇÃO 🚨
+🚨 REGRA CRÍTICA DE IMAGENS 🚨
 ========================================
 
-⛔ NUNCA NUNCA NUNCA use:
-❌ Caminhos locais: ./img.png, /assets/foto.jpg, ../images/produto.jpg
-❌ URLs blob: blob:https://...
-❌ Caminhos relativos de qualquer tipo
-❌ Placeholders genéricos
-
-✅ SEMPRE SEMPRE SEMPRE use URLs HTTPS do Unsplash:
-✅ https://images.unsplash.com/photo-1234567890?w=800
-✅ Use photo-ids DIFERENTES para cada imagem
-✅ Adicione ?w=800 no final para otimizar
-✅ Exemplo completo: https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800
+⛔ NUNCA use caminhos locais ou blob URLs
+✅ SEMPRE use URLs HTTPS do Unsplash: https://images.unsplash.com/photo-[ID]?w=800
 
 ========================================
 REGRA CRÍTICA: RETORNE APENAS CÓDIGO REACT
 ========================================
 
-⚠️ NUNCA retorne JSON!
-⚠️ NUNCA use markdown code blocks!
+⚠️ NUNCA retorne JSON ou markdown code blocks!
 ⚠️ Retorne APENAS código React/JavaScript puro e válido!
 
 CORRETO ✅:
 import React from 'react';
-
-const App = () => {
-  return <div>...</div>;
-};
-
+const App = () => { return <div>...</div>; };
 export default App;
 
-ERRADO ❌:
-\`\`\`jsx
-...
-\`\`\`
-
-ERRADO ❌:
-{
-  "type": "code",
-  "code": "..."
-}
+ERRADO ❌: \`\`\`jsx ... \`\`\`
+ERRADO ❌: { "type": "code", "code": "..." }
 
 ========================================
 DESIGN PROFISSIONAL OBRIGATÓRIO
 ========================================
 
-🎨 ESTRUTURA MODERNA:
-✅ Containers: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-✅ Grids responsivos: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6
-✅ Espaçamento: space-y-8, gap-6
-
-🃏 CARDS ELEGANTES:
-✅ bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl
-✅ Transições: transition-all duration-300
-✅ Hover: hover:scale-105 transform cursor-pointer
-✅ Padding: p-6
-
-📝 TIPOGRAFIA IMPACTANTE:
-✅ Títulos: text-4xl md:text-5xl lg:text-6xl font-bold
-✅ Subtítulos: text-xl md:text-2xl font-semibold
-✅ Corpo: text-base md:text-lg leading-relaxed
-
-🎨 CORES VIBRANTES:
-✅ Primary: cyan-500, blue-600, indigo-600, purple-600
-✅ Gradientes: bg-gradient-to-r from-cyan-500 to-blue-600
-✅ Badges: bg-cyan-500 text-white px-4 py-2 rounded-full font-bold
-
-🖼️ IMAGENS ALTA QUALIDADE (REGRA OBRIGATÓRIA):
-⚠️ CRÍTICO: Use APENAS URLs HTTPS completas do Unsplash
-✅ Formato correto: https://images.unsplash.com/photo-[ID_UNICO]?w=800
-✅ Exemplos válidos:
-   - https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800 (camiseta masculina)
-   - https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800 (vestido feminino)
-   - https://images.unsplash.com/photo-1542272604-787c3835535d?w=800 (calça jeans)
-   - https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800 (jaqueta)
-✅ Tamanho: h-48 md:h-64 object-cover w-full
-✅ Hover: group-hover:scale-110 transition-transform duration-300
-❌ NUNCA use caminhos locais ou blob URLs
-
-🎯 HEADER PROFISSIONAL:
-✅ bg-gray-900 ou bg-gradient-to-r from-gray-900 to-gray-800
-✅ Logo destacado e navegação clara
-✅ py-6, sticky top-0 z-50
-
-🔘 BOTÕES IMPACTANTES:
-✅ bg-gradient-to-r from-cyan-500 to-blue-600 text-white
-✅ px-6 py-3 lg:px-8 lg:py-4 rounded-lg font-semibold
-✅ hover:shadow-xl hover:-translate-y-1 transform
-
-📱 RESPONSIVIDADE TOTAL:
-✅ Mobile-first com breakpoints: sm:, md:, lg:, xl:
-✅ Grid adaptativo: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-
-✨ ANIMAÇÕES:
-✅ transition-all duration-300
-✅ hover:scale-105 hover:shadow-2xl
-✅ hover:-translate-y-1
-
-🦶 FOOTER PROFISSIONAL:
-✅ bg-gray-900 text-white py-12
-✅ Grid: grid grid-cols-1 md:grid-cols-3 gap-8
-
-========================================
-EXEMPLO REFERÊNCIA
-========================================
-
-import React from 'react';
-
-const products = [
-  {
-    id: 1,
-    name: 'Produto Exemplo 1',
-    price: 'R$ 299,90',
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'
-  },
-  {
-    id: 2,
-    name: 'Produto Exemplo 2',
-    price: 'R$ 449,90',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800'
-  }
-];
-
-const App = () => {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 text-white py-6 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            AutoPremium
-          </h1>
-          <nav className="flex gap-8">
-            <a href="#" className="hover:text-cyan-400 transition">Home</a>
-            <a href="#" className="hover:text-cyan-400 transition">Estoque</a>
-          </nav>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <section className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-            Confira Nosso <span className="text-cyan-600">Estoque</span>
-          </h2>
-        </section>
-
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map(product => (
-            <div key={product.id} className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer">
-              <div className="relative h-64 overflow-hidden">
-                <img 
-                  src={product.image} 
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
-                />
-                <div className="absolute top-4 right-4 bg-cyan-500 text-white px-4 py-2 rounded-full font-bold shadow-lg">
-                  {product.price}
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h3>
-                <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  Ver Detalhes
-                </button>
-              </div>
-            </div>
-          ))}
-        </section>
-      </main>
-
-      <footer className="bg-gray-900 text-white py-12 mt-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-gray-400">© 2024 AutoPremium. Todos os direitos reservados.</p>
-        </div>
-      </footer>
-    </div>
-  );
-};
-
-export default App;
-
-========================================
-🚨 REGRAS ABSOLUTAS - NÃO QUEBRE ESTAS REGRAS 🚨
-========================================
-
-⛔ IMAGENS - REGRAS CRÍTICAS:
-❌ PROIBIDO: caminhos locais (./img.png, /assets/foto.jpg, ../images/x.jpg)
-❌ PROIBIDO: URLs blob (blob:https://...)
-❌ PROIBIDO: placeholders genéricos sem URL real
-✅ OBRIGATÓRIO: URLs HTTPS completas do Unsplash
-✅ OBRIGATÓRIO: Formato https://images.unsplash.com/photo-[ID]?w=800
-✅ OBRIGATÓRIO: photo-ids DIFERENTES para cada imagem
-✅ OBRIGATÓRIO: Adicione ?w=800 no final para otimização
-
-EXEMPLOS DE URLs VÁLIDAS PARA PRODUTOS:
-- Roupas masculinas: https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800
-- Roupas femininas: https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800
-- Calçados: https://images.unsplash.com/photo-1542272604-787c3835535d?w=800
-- Acessórios: https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800
+🎨 Use Tailwind CSS com design moderno, responsivo, cards elegantes, gradientes, hover effects e animações.
+📱 Mobile-first com breakpoints sm:, md:, lg:, xl:
+🖼️ Imagens: APENAS URLs HTTPS do Unsplash com ?w=800
 
 Se há código anterior: EDITE mantendo todo código existente
-Se é novo: Crie do zero seguindo as regras de design
+Se é novo: Crie do zero seguindo as regras de design`;
 
-CHECKLIST:
-✅ JSON válido sem markdown?
-✅ Design profissional, moderno e responsivo?
-✅ Todas imagens são URLs HTTPS Unsplash?
-✅ Componentes, cards, grid, tipografia moderna?
-✅ Cores vibrantes e gradientes?
-✅ Hover effects e animações?
-✅ Header e footer profissionais?`;
-
-    // Transformar mensagens para suportar imagens (formato multimodal)
+    // Format messages for multimodal support
     const formattedMessages = messages.map((msg: any) => {
       if (msg.images && msg.images.length > 0) {
-        // Mensagem com imagens - usar formato multimodal
-        const content: any[] = [
-          { type: 'text', text: msg.content }
-        ];
-        
-        // Adicionar cada imagem
+        const content: any[] = [{ type: 'text', text: msg.content }];
         msg.images.forEach((imageData: string) => {
-          content.push({
-            type: 'image_url',
-            image_url: {
-              url: imageData // Base64 data URL
-            }
-          });
+          content.push({ type: 'image_url', image_url: { url: imageData } });
         });
-
-        return {
-          role: msg.role,
-          content: content
-        };
-      } else {
-        // Mensagem de texto simples
-        return {
-          role: msg.role,
-          content: msg.content
-        };
+        return { role: msg.role, content };
       }
+      return { role: msg.role, content: msg.content };
     });
 
-    console.log("📸 Mensagens formatadas com", messages.filter((m: any) => m.images?.length > 0).length, "imagens");
-
-    // Extrair o código atual do último pedido (se houver) para contexto
+    // Add code context for corrections
+    const contextualizedMessages = [...formattedMessages];
     let currentCode = '';
-    const lastUserMessage = messages[messages.length - 1];
-    if (lastUserMessage && messages.length > 1) {
-      // Se não é a primeira mensagem, tenta extrair código existente das mensagens anteriores
-      for (let i = messages.length - 2; i >= 0; i--) {
-        if (messages[i].role === 'assistant' || messages[i].content?.includes('import React')) {
-          currentCode = messages[i].content || '';
-          break;
-        }
+    for (let i = messages.length - 2; i >= 0; i--) {
+      if (messages[i].role === 'assistant' || messages[i].content?.includes('import React')) {
+        currentCode = messages[i].content || '';
+        break;
       }
     }
 
-    // Adicionar contexto do código atual se existir
-    const contextualizedMessages = [...formattedMessages];
-    if (currentCode && lastUserMessage) {
+    if (currentCode && messages.length > 1) {
       const lastMsg = contextualizedMessages[contextualizedMessages.length - 1];
       const originalContent = typeof lastMsg.content === 'string' ? lastMsg.content : lastMsg.content[0]?.text || '';
-      
-      // Se parece ser um pedido de correção/modificação
       if (/(corrija|corrige|ajusta|ajuste|modifica|modifique|mude|altere|conserte|conserta|arruma|arrume)/i.test(originalContent)) {
         if (typeof lastMsg.content === 'string') {
-          lastMsg.content = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido, mantendo todo o resto do código!`;
+          lastMsg.content = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido!`;
         } else if (Array.isArray(lastMsg.content)) {
-          lastMsg.content[0].text = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido, mantendo todo o resto do código!`;
+          lastMsg.content[0].text = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido!`;
         }
       }
     }
@@ -357,26 +183,31 @@ CHECKLIST:
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...contextualizedMessages
-        ],
+        messages: [{ role: 'system', content: systemPrompt }, ...contextualizedMessages],
         temperature: 0.7,
-        stream: true, // Ativar streaming
+        stream: true,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ Erro da API:", response.status, errorText);
+      console.error("❌ AI API error:", response.status, errorText);
       throw new Error(`AI API error: ${response.status}`);
     }
 
-    // Retornar stream SSE
+    // Stream SSE response with credit info in first chunk
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Send credit info first
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'credits',
+            credits_used: creditResult.credits_used,
+            max_credits: creditResult.max_credits,
+            remaining: creditResult.remaining,
+          })}\n\n`));
+
           const reader = response.body?.getReader();
           if (!reader) throw new Error('No reader');
 
@@ -397,7 +228,6 @@ CHECKLIST:
 
               const data = line.slice(6);
               if (data === '[DONE]') {
-                // Limpar código final
                 let cleanCode = generatedCode
                   .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
                   .replace(/```\n?/g, '')
@@ -406,7 +236,6 @@ CHECKLIST:
                   .replace(/\\"/g, '"')
                   .trim();
 
-                // Enviar código final
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
                 controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
                 controller.close();
@@ -416,17 +245,13 @@ CHECKLIST:
               try {
                 const parsed = JSON.parse(data);
                 const delta = parsed.choices?.[0]?.delta?.content;
-                
                 if (delta) {
                   generatedCode += delta;
-                  
-                  // Enviar status de progresso baseado no conteúdo
                   let status = 'Pensando...';
                   if (generatedCode.includes('import')) status = '📦 Importando bibliotecas...';
                   else if (generatedCode.includes('const') || generatedCode.includes('function')) status = '🔧 Criando componentes...';
                   else if (generatedCode.includes('className')) status = '🎨 Estilizando interface...';
                   else if (generatedCode.includes('return')) status = '✨ Finalizando estrutura...';
-                  
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', status })}\n\n`));
                 }
               } catch (e) {
@@ -451,20 +276,14 @@ CHECKLIST:
     });
   } catch (error) {
     console.error("💥 Erro no generate-code:", error);
-    const message = error instanceof Error ? error.message : "Erro desconhecido";
     return new Response(
-  JSON.stringify({
-    type: "chat",
-    role: "assistant",
-    message: "😔 Peço desculpas, houve um erro ao gerar o preview. Tente novamente!",
-    code: null
-  }),
-  {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  }
-);
-
+      JSON.stringify({
+        type: "chat",
+        role: "assistant",
+        message: "😔 Houve um erro ao gerar o preview. Tente novamente!",
+        code: null
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
-
