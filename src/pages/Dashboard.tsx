@@ -9,6 +9,7 @@ import { Loader2, Settings, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ManageSubscriptionDialog from "@/components/ManageSubscriptionDialog";
 import ProjectConnections from "@/components/ProjectConnections";
+import PricingDialog from "@/components/PricingDialog";
 
 interface Subscription {
   id: string;
@@ -27,11 +28,18 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const [showManageDialog, setShowManageDialog] = useState(false);
+  const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [maxCredits, setMaxCredits] = useState(5);
 
   useEffect(() => {
     checkAuth();
+  }, []);
+
+  useEffect(() => {
+    const handleOpenPricing = () => setShowPricingDialog(true);
+    window.addEventListener('open-pricing', handleOpenPricing);
+    return () => window.removeEventListener('open-pricing', handleOpenPricing);
   }, []);
 
   const checkAuth = async () => {
@@ -247,6 +255,7 @@ export default function Dashboard() {
           }}
         />
       )}
+      <PricingDialog open={showPricingDialog} onOpenChange={setShowPricingDialog} />
     </div>
   );
 }
