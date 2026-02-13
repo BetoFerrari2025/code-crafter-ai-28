@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import MainBuilder from "@/components/builder/MainBuilder";
 import SharedProject from "./pages/SharedProject";
 import Gallery from "./pages/Gallery";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/editor" element={<Editor />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/shared/:token" element={<SharedProject />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

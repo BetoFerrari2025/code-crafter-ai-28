@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ChatSidebar from "@/components/ChatSidebar";
 import CodePreview from "@/components/builder/CodePreview";
 import Header from "@/components/Header";
@@ -11,9 +11,9 @@ const Editor = () => {
   const [fixRequest, setFixRequest] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    // Verificar se o usuário está autenticado
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -24,9 +24,32 @@ const Editor = () => {
           variant: "destructive",
         });
         navigate("/auth");
-      } else {
-        setIsLoading(false);
+        return;
       }
+
+      // Load existing project if projectId is passed
+      const projectId = (location.state as any)?.projectId;
+      if (projectId) {
+        try {
+          const { data: project, error } = await supabase
+            .from("projects")
+            .select("code, name")
+            .eq("id", projectId)
+            .maybeSingle();
+
+          if (!error && project?.code) {
+            setGeneratedCode(project.code);
+            toast({
+              title: `Projeto "${project.name}" carregado`,
+              description: "Continue editando seu projeto.",
+            });
+          }
+        } catch (e) {
+          console.error("Error loading project:", e);
+        }
+      }
+
+      setIsLoading(false);
     };
 
     checkAuth();
