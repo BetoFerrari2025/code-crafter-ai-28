@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -14,21 +14,32 @@ import type { User } from "@supabase/supabase-js";
 const Header = () => {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchAvatar(session.user.id);
     });
 
-    // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) fetchAvatar(session.user.id);
+      else setAvatarUrl(null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchAvatar = async (uid: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("avatar_url, display_name")
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+  };
 
   const handleLogout = async () => {
     try {
@@ -106,6 +117,7 @@ const Header = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <Avatar className="h-9 w-9 cursor-pointer">
+                    <AvatarImage src={avatarUrl || undefined} />
                     <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                       {getUserInitials()}
                     </AvatarFallback>
@@ -116,6 +128,7 @@ const Header = () => {
                     {/* Profile Header */}
                     <div className="flex items-start gap-3">
                       <Avatar className="h-12 w-12">
+                        <AvatarImage src={avatarUrl || undefined} />
                         <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-lg">
                           {getUserInitials()}
                         </AvatarFallback>
@@ -163,7 +176,7 @@ const Header = () => {
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="ghost" className="justify-start" size="sm">
+                      <Button variant="ghost" className="justify-start" size="sm" onClick={() => navigate("/profile")}>
                         <Settings className="h-4 w-4 mr-2" />
                         Configurações
                       </Button>
