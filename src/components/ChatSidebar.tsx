@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Code2, Sparkles, Loader2, Image as ImageIcon, X, AlertTriangle, RefreshCw, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CreditsExhaustedAlert from "@/components/CreditsExhaustedAlert";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -16,6 +16,7 @@ interface Message {
   isStatus?: boolean;
   isError?: boolean;
   errorDetails?: string;
+  timestamp?: Date;
 }
 
 interface ChatSidebarProps {
@@ -31,6 +32,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       id: "1",
       role: "assistant",
       content: "Olá! 👋 Estou pronto para criar seu app. Me diga o que você precisa!",
+      timestamp: new Date(),
     },
   ]);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -43,6 +45,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   const [creditsAlertMessage, setCreditsAlertMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
   // Auto-send fix request from preview errors
@@ -55,10 +58,20 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   }, [fixRequest]);
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
   }, []);
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -85,12 +98,12 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   }, []);
 
   const promptSuggestions = [
-    "🛒 Crie uma loja virtual com carrinho",
-    "📋 Crie um dashboard de tarefas",
-    "🔐 Adicione login com email e senha",
-    "📊 Crie gráficos de analytics",
-    "💬 Crie um chat em tempo real",
-    "🎨 Melhore o design do app",
+    { icon: "🛒", label: "Loja virtual com carrinho" },
+    { icon: "📋", label: "Dashboard de tarefas" },
+    { icon: "🔐", label: "Login com email e senha" },
+    { icon: "📊", label: "Gráficos de analytics" },
+    { icon: "💬", label: "Chat em tempo real" },
+    { icon: "🎨", label: "Melhore o design" },
   ];
 
   const handleSend = async (overrideInput?: string) => {
@@ -103,13 +116,16 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       role: "user",
       content: messageContent || "Gere código baseado nas imagens enviadas",
       images: selectedImages.length > 0 ? selectedImages : undefined,
+      timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     const imagesToSend = [...selectedImages];
     setSelectedImages([]);
     setIsLoading(true);
+    scrollToBottom();
 
     const statusMessageId = (Date.now() + 1).toString();
     const statusMessage: Message = {
@@ -117,6 +133,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       role: "assistant",
       content: "🤔 Analisando sua solicitação...",
       isStatus: true,
+      timestamp: new Date(),
     };
     setMessages((prev) => [...prev, statusMessage]);
     scrollToBottom();
@@ -142,7 +159,6 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
         };
       }
 
-      // Use supabase client to get the session token for authenticated requests
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Sessão expirada. Faça login novamente.');
@@ -160,7 +176,6 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
         }
       );
 
-      // Handle credits exhausted
       if (response.status === 429) {
         const errorData = await response.json();
         setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
@@ -197,6 +212,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
               id: (Date.now() + 2).toString(),
               role: "assistant",
               content: "✅ Código gerado com sucesso! Veja o preview ao lado.",
+              timestamp: new Date(),
             }]);
             setLastErrorMessage("");
             toast({ title: "Código gerado!", description: "O código foi gerado com sucesso." });
@@ -217,6 +233,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
               setMessages((prev) => 
                 prev.map(m => m.id === statusMessageId ? { ...m, content: parsed.status } : m)
               );
+              scrollToBottom();
             } else if (parsed.type === 'code') {
               generatedCode = parsed.code;
               if (onCodeGenerated) onCodeGenerated(generatedCode);
@@ -233,8 +250,9 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `❌ ${error instanceof Error ? error.message : 'Ocorreu um erro ao gerar o código.'}`,
+        content: `${error instanceof Error ? error.message : 'Ocorreu um erro ao gerar o código.'}`,
         isError: true,
+        timestamp: new Date(),
       }]);
       toast({ title: "Erro", description: "Não foi possível gerar o código.", variant: "destructive" });
     } finally {
@@ -243,96 +261,120 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     }
   };
 
+  const formatTime = (date?: Date) => {
+    if (!date) return "";
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div className="w-[400px] h-full bg-sidebar border-r border-sidebar-border flex flex-col">
+      {/* Header */}
       <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-hero flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-hero flex items-center justify-center shadow-soft">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
-          <div className="flex-1">
-            <h2 className="font-semibold text-sidebar-foreground">Chat AI</h2>
-            <p className="text-xs text-muted-foreground">Descreva o que você quer criar</p>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-sidebar-foreground text-sm">Chat AI</h2>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-xs text-muted-foreground">Online</p>
+            </div>
           </div>
           {creditsInfo && (
-            <div className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-full">
-              <Zap className="h-3 w-3 text-primary" />
-              <span className="font-medium">{creditsInfo.remaining}/{creditsInfo.max}</span>
+            <div className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
+              <Zap className="h-3 w-3" />
+              <span>{creditsInfo.remaining}/{creditsInfo.max}</span>
             </div>
           )}
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
+      {/* Messages */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex gap-2.5 animate-fade-in ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-medium ${
                 message.role === "user" ? "bg-primary text-primary-foreground"
                   : message.isError ? "bg-destructive text-destructive-foreground"
+                  : message.isStatus ? "bg-muted text-muted-foreground"
                   : "bg-gradient-hero text-white"
               }`}>
-                {message.role === "user" ? "U" : message.isError ? <AlertTriangle className="h-4 w-4" /> : <Code2 className="h-4 w-4" />}
+                {message.role === "user" ? "U" 
+                  : message.isError ? <AlertTriangle className="h-3.5 w-3.5" /> 
+                  : message.isStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Code2 className="h-3.5 w-3.5" />}
               </div>
-              <div className={`rounded-2xl px-4 py-3 max-w-[80%] ${
-                message.role === "user" ? "bg-primary text-primary-foreground"
-                  : message.isError ? "bg-destructive/10 text-destructive border border-destructive/20"
-                  : "bg-sidebar-accent text-sidebar-foreground"
-              }`}>
-                {message.images && message.images.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {message.images.map((img, idx) => (
-                      <img key={idx} src={img} alt={`Uploaded ${idx + 1}`} className="w-20 h-20 object-cover rounded border border-border" />
-                    ))}
-                  </div>
-                )}
-                {message.isCode ? (
-                  <pre className="text-xs overflow-x-auto whitespace-pre-wrap font-mono">{message.content}</pre>
-                ) : (
-                  <p className="text-sm">{message.content}</p>
-                )}
-                {message.isError && message.errorDetails && (
-                  <Button variant="outline" size="sm" className="mt-2 gap-1" onClick={() => handleRetryWithError(message.errorDetails!)}>
-                    <RefreshCw className="h-3 w-3" /> Tentar corrigir
-                  </Button>
-                )}
+              <div className="flex flex-col gap-1 max-w-[80%]">
+                <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                  message.role === "user" 
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : message.isError 
+                    ? "bg-destructive/10 text-destructive border border-destructive/20 rounded-bl-md"
+                    : message.isStatus
+                    ? "bg-muted/50 text-muted-foreground border border-border rounded-bl-md italic"
+                    : "bg-sidebar-accent text-sidebar-foreground rounded-bl-md"
+                }`}>
+                  {message.images && message.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {message.images.map((img, idx) => (
+                        <img key={idx} src={img} alt={`Uploaded ${idx + 1}`} className="w-20 h-20 object-cover rounded-lg border border-border/50" />
+                      ))}
+                    </div>
+                  )}
+                  {message.isCode ? (
+                    <pre className="text-xs overflow-x-auto whitespace-pre-wrap font-mono">{message.content}</pre>
+                  ) : message.role === "assistant" && !message.isStatus ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:m-0 [&>ol]:m-0">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p>{message.content}</p>
+                  )}
+                  {message.isError && message.errorDetails && (
+                    <Button variant="outline" size="sm" className="mt-2 gap-1 h-7 text-xs" onClick={() => handleRetryWithError(message.errorDetails!)}>
+                      <RefreshCw className="h-3 w-3" /> Tentar corrigir
+                    </Button>
+                  )}
+                </div>
+                <span className={`text-[10px] text-muted-foreground/60 px-1 ${message.role === "user" ? "text-right" : "text-left"}`}>
+                  {formatTime(message.timestamp)}
+                </span>
               </div>
             </div>
           ))}
           
           {isLoading && (
-            <div className="flex items-start gap-3 animate-fade-in">
-              <div className="w-8 h-8 rounded-full bg-gradient-hero flex items-center justify-center flex-shrink-0 animate-pulse">
-                <Loader2 className="h-4 w-4 text-white animate-spin" />
+            <div className="flex items-start gap-2.5 animate-fade-in">
+              <div className="w-7 h-7 rounded-full bg-gradient-hero flex items-center justify-center flex-shrink-0">
+                <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
               </div>
-              <div className="flex-1 bg-sidebar-accent rounded-2xl px-4 py-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Pensando...</p>
-                  <p className="text-xs text-muted-foreground">Criando agora, aguarde.</p>
-                  <div className="flex gap-1 mt-2">
-                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
+              <div className="bg-sidebar-accent rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             </div>
           )}
 
           {showSuggestions && messages.length <= 1 && !isLoading && (
-            <div className="animate-fade-in">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">💡 Sugestões rápidas:</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="animate-fade-in space-y-3 pt-2">
+              <p className="text-xs text-muted-foreground font-medium">💡 Comece com uma sugestão:</p>
+              <div className="grid grid-cols-2 gap-2">
                 {promptSuggestions.map((s, i) => (
                   <button
                     key={i}
-                    onClick={() => handleSend(s)}
-                    className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-smooth border border-primary/20"
+                    onClick={() => handleSend(`${s.icon} ${s.label}`)}
+                    className="text-xs px-3 py-2.5 rounded-xl bg-sidebar-accent hover:bg-primary/10 text-sidebar-foreground hover:text-primary transition-smooth border border-border/50 hover:border-primary/30 text-left flex items-start gap-2"
                   >
-                    {s}
+                    <span className="text-base leading-none mt-0.5">{s.icon}</span>
+                    <span className="leading-tight">{s.label}</span>
                   </button>
                 ))}
               </div>
@@ -342,37 +384,44 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t border-sidebar-border">
+      {/* Input area */}
+      <div className="p-3 border-t border-sidebar-border bg-sidebar">
         {selectedImages.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3 p-2 bg-sidebar-accent rounded-lg">
+          <div className="flex flex-wrap gap-2 mb-2 p-2 bg-sidebar-accent rounded-xl">
             {selectedImages.map((img, idx) => (
               <div key={idx} className="relative group">
-                <img src={img} alt={`Selected ${idx + 1}`} className="w-16 h-16 object-cover rounded border border-border" />
-                <button onClick={() => removeImage(idx)} className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <img src={img} alt={`Selected ${idx + 1}`} className="w-14 h-14 object-cover rounded-lg border border-border/50" />
+                <button onClick={() => removeImage(idx)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-smooth text-[10px]">
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
           </div>
         )}
-        <div className="relative">
+        <div className="relative bg-sidebar-accent rounded-xl border border-border/50 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 transition-smooth">
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
-          <Textarea
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleTextareaChange}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Descreva o que você quer fazer..."
-            className="min-h-[100px] pr-24 resize-none"
+            placeholder="Descreva o que você quer criar..."
+            rows={1}
+            className="w-full bg-transparent text-sm px-4 pt-3 pb-10 resize-none outline-none placeholder:text-muted-foreground/60 text-sidebar-foreground min-h-[44px] max-h-[160px]"
+            disabled={isLoading}
           />
-          <div className="absolute bottom-3 right-3 flex gap-2">
-            <Button onClick={() => fileInputRef.current?.click()} size="icon" variant="ghost" className="rounded-full" disabled={isLoading} type="button">
+          <div className="absolute bottom-2 right-2 flex gap-1.5">
+            <Button onClick={() => fileInputRef.current?.click()} size="icon" variant="ghost" className="rounded-full h-7 w-7 text-muted-foreground hover:text-primary" disabled={isLoading} type="button">
               <ImageIcon className="h-4 w-4" />
             </Button>
-            <Button onClick={() => handleSend()} size="icon" className="rounded-full" disabled={(!input.trim() && selectedImages.length === 0) || isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Button onClick={() => handleSend()} size="icon" className="rounded-full h-7 w-7" disabled={(!input.trim() && selectedImages.length === 0) || isLoading}>
+              {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             </Button>
           </div>
         </div>
+        <p className="text-[10px] text-muted-foreground/50 text-center mt-1.5">
+          Shift+Enter para nova linha • Enter para enviar
+        </p>
       </div>
 
       <CreditsExhaustedAlert
