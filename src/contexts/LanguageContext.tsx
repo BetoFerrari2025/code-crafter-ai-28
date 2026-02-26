@@ -167,6 +167,15 @@ const translations: Record<string, Record<Language, string>> = {
   "auth.passwordMin": { pt: "Senha deve ter no mínimo 6 caracteres", en: "Password must be at least 6 characters" },
   "auth.passwordTooLong": { pt: "Senha muito longa", en: "Password too long" },
   "auth.invalidPhone": { pt: "Número de celular inválido", en: "Invalid phone number" },
+  "auth.namePlaceholder": { pt: "Seu nome completo", en: "Your full name" },
+
+  // Confirm Email
+  "confirmEmail.title": { pt: "Verifique seu e-mail", en: "Check your email" },
+  "confirmEmail.description": { pt: "Enviamos um e-mail de confirmação para você. Clique no botão de confirmação no e-mail para ativar sua conta.", en: "We sent you a confirmation email. Click the confirm button in the email to activate your account." },
+  "confirmEmail.step1": { pt: "1. Abra seu e-mail", en: "1. Open your email" },
+  "confirmEmail.step2": { pt: "2. Clique no botão \"Confirmar\" no e-mail que enviamos", en: "2. Click the \"Confirm\" button in the email we sent" },
+  "confirmEmail.spam": { pt: "Não encontrou? Verifique a pasta de spam ou lixo eletrônico.", en: "Can't find it? Check your spam or junk folder." },
+  "confirmEmail.backToLogin": { pt: "Voltar ao login", en: "Back to login" },
 
   // Dashboard
   "dashboard.title": { pt: "Dashboard", en: "Dashboard" },
