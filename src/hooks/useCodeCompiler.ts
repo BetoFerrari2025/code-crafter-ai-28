@@ -82,6 +82,7 @@ export const useCodeCompiler = () => {
       }).code;
 
       if (!transpiled) {
+        setIsCompiling(false);
         return { html: '', error: 'Erro na transpilação do código' };
       }
 
@@ -90,21 +91,45 @@ export const useCodeCompiler = () => {
           const exports = {};
           const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext, useReducer } = React;
           const { createRoot } = ReactDOM;
+          const rootEl = document.getElementById("root");
           const lucide = window.lucide || {};
+          let previewRendered = false;
+
+          const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          const renderError = (title, error) => {
+            if (!rootEl) return;
+            const message = escapeHtml((error && (error.message || error)) || 'Erro desconhecido');
+            rootEl.innerHTML = '<div style="padding: 20px; color: #ef4444; font-family: system-ui;"><h2>' + title + '</h2><pre style="background: #fee2e2; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px;">' + message + '</pre></div>';
+          };
+
+          if (!rootEl) return;
+
+          const handleRuntimeError = (error) => {
+            console.error('Erro no preview:', error);
+            renderError('Erro de Runtime', error);
+          };
+
+          window.addEventListener('error', (event) => {
+            handleRuntimeError(event.error || event.message || 'Erro desconhecido');
+          });
+
+          window.addEventListener('unhandledrejection', (event) => {
+            const reason = event.reason instanceof Error ? event.reason : String(event.reason || 'Promise rejeitada');
+            handleRuntimeError(reason);
+          });
           
           // Create a proxy to auto-generate Lucide icon components
           const LucideIcons = new Proxy({}, {
             get: function(target, prop) {
               if (typeof prop !== 'string') return undefined;
-              const iconName = prop.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
               return function LucideIcon(props) {
                 const ref = React.useRef(null);
                 React.useEffect(() => {
                   if (ref.current && lucide[prop]) {
-                    const attrs = {};
-                    if (props.size) { attrs.width = props.size; attrs.height = props.size; }
-                    if (props.color) attrs.stroke = props.color;
-                    if (props.strokeWidth) attrs['stroke-width'] = props.strokeWidth;
                     try {
                       const result = lucide.createElement(lucide[prop]);
                       ref.current.innerHTML = '';
@@ -124,6 +149,52 @@ export const useCodeCompiler = () => {
             }
           });
 
+          const PreviewErrorBoundary = class extends React.Component {
+            constructor(props) {
+              super(props);
+              this.state = { hasError: false, message: '' };
+            }
+            static getDerivedStateFromError(error) {
+              return {
+                hasError: true,
+                message: (error && (error.message || String(error))) || 'Erro desconhecido',
+              };
+            }
+            componentDidCatch(error) {
+              console.error('Erro capturado pelo ErrorBoundary:', error);
+            }
+            render() {
+              if (this.state.hasError) {
+                return React.createElement('div', {
+                  style: {
+                    minHeight: '100vh',
+                    padding: '20px',
+                    color: '#ef4444',
+                    fontFamily: 'system-ui',
+                  }
+                },
+                React.createElement('h2', null, 'Erro de Renderização'),
+                React.createElement('pre', {
+                  style: {
+                    background: '#fee2e2',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    overflow: 'auto',
+                    fontSize: '12px',
+                  }
+                }, this.state.message));
+              }
+              return this.props.children;
+            }
+          };
+
+          const RenderGuard = (props) => {
+            React.useEffect(() => {
+              previewRendered = true;
+            }, []);
+            return props.children;
+          };
+
           try {
             ${transpiled}
 
@@ -134,15 +205,26 @@ export const useCodeCompiler = () => {
                                (typeof Page !== 'undefined' ? Page : null);
             
             if (!RenderComp) {
-              document.getElementById("root").innerHTML = '<div style="padding: 20px; color: #ef4444; font-family: system-ui;"><h2>Erro</h2><p>Nenhum componente encontrado para renderizar.</p><p style="color: #666;">Certifique-se de que o código exporta um componente válido.</p></div>';
+              renderError('Erro', 'Nenhum componente encontrado para renderizar. Certifique-se de exportar um componente válido.');
               return;
             }
 
-            const root = createRoot(document.getElementById("root"));
-            root.render(React.createElement(RenderComp));
+            const root = createRoot(rootEl);
+            root.render(
+              React.createElement(
+                PreviewErrorBoundary,
+                null,
+                React.createElement(RenderGuard, null, React.createElement(RenderComp))
+              )
+            );
+
+            setTimeout(() => {
+              if (!previewRendered && rootEl.innerHTML.trim().length === 0) {
+                renderError('Erro de Renderização', 'O componente não gerou saída visível.');
+              }
+            }, 1200);
           } catch (err) {
-            console.error('Erro de renderização:', err);
-            document.getElementById("root").innerHTML = '<div style="padding: 20px; color: #ef4444; font-family: system-ui;"><h2>Erro de Renderização</h2><pre style="background: #fee2e2; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px;">' + (err.message || err) + '</pre></div>';
+            handleRuntimeError(err);
           }
         })();
       `;

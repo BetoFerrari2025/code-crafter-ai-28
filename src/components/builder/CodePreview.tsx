@@ -55,6 +55,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const [compilationError, setCompilationError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [previewLoadError, setPreviewLoadError] = useState<string | null>(null);
   const [showGithubDialog, setShowGithubDialog] = useState(false);
   const [showSupabaseDialog, setShowSupabaseDialog] = useState(false);
   const [githubRepo, setGithubRepo] = useState("");
@@ -69,6 +70,21 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const { compile, cleanCode, isCompiling } = useCodeCompiler();
   const { history, currentIndex, addVersion, undo, redo, restoreVersion, canUndo, canRedo } = useCodeHistory();
 
+  const updatePreviewFromCode = useCallback((code: string) => {
+    const result = compile(code);
+    setPreviewHtml(result.html);
+    setCompilationError(result.error);
+    setPreviewLoadError(result.html ? null : "Falha ao gerar o preview.");
+    return result;
+  }, [compile]);
+
+  const handleRecompilePreview = useCallback(() => {
+    if (!displayCode) return;
+    updatePreviewFromCode(displayCode);
+    setRefreshKey((k) => k + 1);
+    toast({ title: "Preview recarregado", description: "Nova tentativa de renderização executada." });
+  }, [displayCode, updatePreviewFromCode, toast]);
+
   // Processa novo código gerado
   useEffect(() => {
     if (generatedCode) {
@@ -76,55 +92,47 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       setDisplayCode(cleaned);
       setEditedCode(cleaned);
       addVersion(cleaned, 'Código gerado pela IA');
-      
-      const result = compile(generatedCode);
-      setPreviewHtml(result.html);
-      setCompilationError(result.error);
-      
+
+      updatePreviewFromCode(generatedCode);
+
       if (onCodeChange) {
         onCodeChange(cleaned);
       }
     }
-  }, [generatedCode, compile, cleanCode, addVersion, onCodeChange]);
+  }, [generatedCode, cleanCode, addVersion, onCodeChange, updatePreviewFromCode]);
 
   const handleUndo = useCallback(() => {
     const version = undo();
     if (version) {
       setDisplayCode(version.code);
       setEditedCode(version.code);
-      const result = compile(version.code);
-      setPreviewHtml(result.html);
-      setCompilationError(result.error);
+      updatePreviewFromCode(version.code);
       if (onCodeChange) onCodeChange(version.code);
       toast({ title: "Desfazer", description: "Versão anterior restaurada" });
     }
-  }, [undo, compile, onCodeChange, toast]);
+  }, [undo, onCodeChange, toast, updatePreviewFromCode]);
 
   const handleRedo = useCallback(() => {
     const version = redo();
     if (version) {
       setDisplayCode(version.code);
       setEditedCode(version.code);
-      const result = compile(version.code);
-      setPreviewHtml(result.html);
-      setCompilationError(result.error);
+      updatePreviewFromCode(version.code);
       if (onCodeChange) onCodeChange(version.code);
       toast({ title: "Refazer", description: "Versão seguinte restaurada" });
     }
-  }, [redo, compile, onCodeChange, toast]);
+  }, [redo, onCodeChange, toast, updatePreviewFromCode]);
 
   const handleRestoreVersion = useCallback((index: number) => {
     const version = restoreVersion(index);
     if (version) {
       setDisplayCode(version.code);
       setEditedCode(version.code);
-      const result = compile(version.code);
-      setPreviewHtml(result.html);
-      setCompilationError(result.error);
+      updatePreviewFromCode(version.code);
       if (onCodeChange) onCodeChange(version.code);
       toast({ title: "Restaurado", description: `Versão ${index + 1} restaurada` });
     }
-  }, [restoreVersion, compile, onCodeChange, toast]);
+  }, [restoreVersion, onCodeChange, toast, updatePreviewFromCode]);
 
   const handleTryFix = useCallback(() => {
     if (compilationError && onRequestFix) {
@@ -170,9 +178,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     setIsEditing(false);
     addVersion(editedCode, 'Editado manualmente');
     
-    const result = compile(editedCode);
-    setPreviewHtml(result.html);
-    setCompilationError(result.error);
+    updatePreviewFromCode(editedCode);
     
     if (onCodeChange) onCodeChange(editedCode);
     
@@ -301,7 +307,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
             <Button variant="ghost" size="icon" onClick={handleCopyCode} disabled={!displayCode} title="Copiar código" className="h-8 w-8">
               {isCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setRefreshKey(k => k + 1)} disabled={!displayCode} title="Recarregar preview" className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleRecompilePreview} disabled={!displayCode} title="Recarregar preview" className="h-8 w-8">
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" onClick={handleDownloadCode} disabled={!displayCode} title="Baixar código" className="h-8 w-8">
@@ -437,13 +443,44 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                   {/* Content area */}
                   <div className="flex-1 overflow-hidden">
                     {displayMode === "preview" ? (
-                      <iframe
-                        key={`${viewMode}-${refreshKey}-${previewHtml.slice(0, 100)}`}
-                        srcDoc={previewHtml}
-                        className="w-full h-full border-0"
-                        title="Preview"
-                        sandbox="allow-scripts allow-same-origin"
-                      />
+                      previewLoadError || !previewHtml ? (
+                        <div className="h-full flex items-center justify-center p-6">
+                          <div className="max-w-md text-center space-y-3 animate-fade-in">
+                            <p className="text-sm text-destructive font-medium">
+                              {previewLoadError || "O preview foi carregado em branco."}
+                            </p>
+                            <Button size="sm" onClick={handleRecompilePreview} className="gap-2">
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              Recarregar preview
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <iframe
+                          key={`${viewMode}-${refreshKey}-${previewHtml.slice(0, 100)}`}
+                          srcDoc={previewHtml}
+                          className="w-full h-full border-0"
+                          title="Preview"
+                          sandbox="allow-scripts allow-same-origin"
+                          onError={() => setPreviewLoadError("Falha ao carregar o preview.")}
+                          onLoad={(event) => {
+                            try {
+                              const doc = event.currentTarget.contentDocument;
+                              const root = doc?.getElementById("root");
+                              const hasRootContent = Boolean(root && root.innerHTML.trim().length > 0);
+                              const hasBodyContent = Boolean(doc?.body?.innerText?.trim().length);
+
+                              if (!hasRootContent && !hasBodyContent) {
+                                setPreviewLoadError("Preview carregou em branco.");
+                              } else {
+                                setPreviewLoadError(null);
+                              }
+                            } catch {
+                              setPreviewLoadError(null);
+                            }
+                          }}
+                        />
+                      )
                     ) : isEditing ? (
                       <textarea
                         value={editedCode}

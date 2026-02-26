@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertCircle, Home, Code2 } from "lucide-react";
+import { Loader2, AlertCircle, Home, Code2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCodeCompiler } from "@/hooks/useCodeCompiler";
 
@@ -11,6 +11,9 @@ const SharedProject = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [projectCode, setProjectCode] = useState<string>("");
+  const [previewLoadError, setPreviewLoadError] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const { compile } = useCodeCompiler();
 
@@ -54,6 +57,7 @@ const SharedProject = () => {
         }
 
         setProjectName(data.name || "Projeto");
+        setProjectCode(data.code);
         
         // Usa o hook de compilação
         const result = compile(data.code);
@@ -62,6 +66,7 @@ const SharedProject = () => {
           setError(`Erro ao renderizar: ${result.error}`);
         } else {
           setPreviewHtml(result.html);
+          setPreviewLoadError(result.html ? "" : "Falha ao gerar preview.");
         }
       } catch (err) {
         console.error('Error loading project:', err);
@@ -73,6 +78,21 @@ const SharedProject = () => {
 
     loadProject();
   }, [token, compile]);
+
+  const handleReloadPreview = useCallback(() => {
+    if (!projectCode) return;
+
+    const result = compile(projectCode);
+    if (result.error && !result.html.includes('id="root"')) {
+      setError(`Erro ao renderizar: ${result.error}`);
+      return;
+    }
+
+    setError("");
+    setPreviewHtml(result.html);
+    setPreviewLoadError(result.html ? "" : "Preview carregou em branco.");
+    setRefreshKey((k) => k + 1);
+  }, [projectCode, compile]);
 
   if (isLoading) {
     return (
@@ -137,13 +157,45 @@ const SharedProject = () => {
       </div>
       
       {/* Preview iframe */}
-      <iframe
-        srcDoc={previewHtml}
-        className="w-full border-0"
-        style={{ height: 'calc(100vh - 40px)' }}
-        title={projectName || "Shared Project Preview"}
-        sandbox="allow-scripts allow-same-origin"
-      />
+      {previewLoadError || !previewHtml ? (
+        <div className="h-[calc(100vh-40px)] flex items-center justify-center p-6 bg-muted/20">
+          <div className="text-center space-y-3 max-w-md">
+            <p className="text-sm text-destructive font-medium">
+              {previewLoadError || "O preview foi carregado em branco."}
+            </p>
+            <Button onClick={handleReloadPreview} size="sm" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Recarregar preview
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <iframe
+          key={`${refreshKey}-${previewHtml.slice(0, 120)}`}
+          srcDoc={previewHtml}
+          className="w-full border-0"
+          style={{ height: 'calc(100vh - 40px)' }}
+          title={projectName || "Shared Project Preview"}
+          sandbox="allow-scripts allow-same-origin"
+          onError={() => setPreviewLoadError("Falha ao carregar o preview.")}
+          onLoad={(event) => {
+            try {
+              const doc = event.currentTarget.contentDocument;
+              const root = doc?.getElementById("root");
+              const hasRootContent = Boolean(root && root.innerHTML.trim().length > 0);
+              const hasBodyContent = Boolean(doc?.body?.innerText?.trim().length);
+
+              if (!hasRootContent && !hasBodyContent) {
+                setPreviewLoadError("Preview carregou em branco.");
+              } else {
+                setPreviewLoadError("");
+              }
+            } catch {
+              setPreviewLoadError("");
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
