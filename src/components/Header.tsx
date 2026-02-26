@@ -30,7 +30,6 @@ const Header = () => {
         checkAdmin(session.user.id);
       }
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -41,26 +40,16 @@ const Header = () => {
         setIsAdmin(false);
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const fetchAvatar = async (uid: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("avatar_url, display_name")
-      .eq("user_id", uid)
-      .maybeSingle();
+    const { data } = await supabase.from("profiles").select("avatar_url, display_name").eq("user_id", uid).maybeSingle();
     if (data?.avatar_url) setAvatarUrl(data.avatar_url);
   };
 
   const checkAdmin = async (uid: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid)
-      .eq("role", "admin")
-      .maybeSingle();
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
     setIsAdmin(!!data);
   };
 
@@ -68,10 +57,10 @@ const Header = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      toast({ title: "Logout realizado", description: "Você saiu da sua conta com sucesso." });
+      toast({ title: t("header.logoutSuccess"), description: t("header.logoutDesc") });
       navigate("/");
     } catch (error: any) {
-      toast({ title: "Erro ao sair", description: error.message, variant: "destructive" });
+      toast({ title: t("header.logoutError"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -110,13 +99,7 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Language toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="rounded-full text-xs font-semibold gap-1"
-            onClick={() => setLanguage(language === "pt" ? "en" : "pt")}
-          >
+          <Button variant="ghost" size="sm" className="rounded-full text-xs font-semibold gap-1" onClick={() => setLanguage(language === "pt" ? "en" : "pt")}>
             <Globe className="h-4 w-4" />
             {language === "pt" ? "PT" : "EN"}
           </Button>
@@ -159,7 +142,7 @@ const Header = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-foreground">
-                          {user.email?.split('@')[0] || 'Usuário'}
+                          {user.email?.split('@')[0] || t("header.user")}
                         </h3>
                         <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                       </div>

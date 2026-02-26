@@ -1,5 +1,6 @@
 import { Users, BarChart3, CreditCard, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export type AdminView = "users" | "stats" | "credits" | "online";
 
@@ -10,18 +11,20 @@ interface AdminSidebarProps {
   onlineCount: number;
 }
 
-const menuItems = [
-  { id: "users" as AdminView, label: "Usuários", icon: Users },
-  { id: "stats" as AdminView, label: "Estatísticas de Planos", icon: BarChart3 },
-  { id: "credits" as AdminView, label: "Créditos", icon: CreditCard },
-  { id: "online" as AdminView, label: "Usuários Online", icon: Activity },
-];
-
 export function AdminSidebar({ currentView, onViewChange, planStats, onlineCount }: AdminSidebarProps) {
+  const { t } = useLanguage();
+
+  const menuItems = [
+    { id: "users" as AdminView, label: t("admin.users"), icon: Users },
+    { id: "stats" as AdminView, label: t("admin.planStats"), icon: BarChart3 },
+    { id: "credits" as AdminView, label: t("admin.credits"), icon: CreditCard },
+    { id: "online" as AdminView, label: t("admin.onlineUsers"), icon: Activity },
+  ];
+
   return (
-    <aside className="w-64 border-r bg-card min-h-[calc(100vh-5rem)] p-4 space-y-2">{/* hidden on mobile handled by parent */}
+    <aside className="w-64 border-r bg-card min-h-[calc(100vh-5rem)] p-4 space-y-2">
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-3">
-        Painel Admin
+        {t("admin.panel")}
       </h2>
       {menuItems.map((item) => (
         <button

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Camera, ArrowLeft, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -22,30 +23,21 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  useEffect(() => { loadProfile(); }, []);
 
   const loadProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
-
       setUserId(user.id);
       setEmail(user.email || "");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
+      const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
       if (profile) {
         setDisplayName(profile.display_name || "");
         setAvatarUrl(profile.avatar_url);
       } else {
-        // Create profile if doesn't exist (for existing users)
         const name = user.email?.split("@")[0] || "";
         setDisplayName(name);
         await supabase.from("profiles").insert({ user_id: user.id, display_name: name });
@@ -68,57 +60,39 @@ export default function Profile() {
     setSaving(true);
     try {
       let finalAvatarUrl = avatarUrl;
-
-      // Upload avatar if changed
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop();
         const path = `${userId}/avatar.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(path, avatarFile, { upsert: true });
-
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
         if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(path);
+        const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
         finalAvatarUrl = `${publicUrl}?t=${Date.now()}`;
       }
-
-      // Update profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ display_name: displayName, avatar_url: finalAvatarUrl })
-        .eq("user_id", userId);
-
+      const { error: profileError } = await supabase.from("profiles").update({ display_name: displayName, avatar_url: finalAvatarUrl }).eq("user_id", userId);
       if (profileError) throw profileError;
-
-      // Change password if provided
       if (newPassword) {
         if (newPassword !== confirmPassword) {
-          toast({ title: "Erro", description: "As senhas não coincidem.", variant: "destructive" });
+          toast({ title: t("common.error"), description: t("profile.passwordMismatch"), variant: "destructive" });
           setSaving(false);
           return;
         }
         if (newPassword.length < 6) {
-          toast({ title: "Erro", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
+          toast({ title: t("common.error"), description: t("profile.passwordTooShort"), variant: "destructive" });
           setSaving(false);
           return;
         }
         const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
         if (pwError) throw pwError;
       }
-
       setAvatarUrl(finalAvatarUrl);
       setAvatarFile(null);
       setAvatarPreview(null);
       setNewPassword("");
       setConfirmPassword("");
-
-      toast({ title: "Perfil salvo!", description: "Suas alterações foram salvas com sucesso." });
+      toast({ title: t("profile.saved"), description: t("profile.savedDesc") });
     } catch (error: any) {
       console.error(error);
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: t("profile.saveError"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -138,36 +112,27 @@ export default function Profile() {
   return (
     <div className="container max-w-2xl mx-auto py-8 px-4">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2">
-        <ArrowLeft className="h-4 w-4" /> Voltar
+        <ArrowLeft className="h-4 w-4" /> {t("profile.back")}
       </Button>
 
-      <h1 className="text-3xl font-bold mb-8">Editar Perfil</h1>
+      <h1 className="text-3xl font-bold mb-8">{t("profile.title")}</h1>
 
       <div className="grid gap-6">
-        {/* Avatar */}
         <Card>
           <CardHeader>
-            <CardTitle>Foto do Perfil</CardTitle>
-            <CardDescription>Clique na foto para alterar</CardDescription>
+            <CardTitle>{t("profile.photo")}</CardTitle>
+            <CardDescription>{t("profile.photoDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center gap-6">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <Avatar className="h-24 w-24">
                 <AvatarImage src={currentAvatar || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                  {initials}
-                </AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera className="h-6 w-6 text-white" />
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
             </div>
             <div>
               <p className="font-medium">{displayName || email}</p>
@@ -176,20 +141,14 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Name */}
         <Card>
           <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
+            <CardTitle>{t("profile.personalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="name">Nome de exibição</Label>
-              <Input
-                id="name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Seu nome"
-              />
+              <Label htmlFor="name">{t("profile.displayName")}</Label>
+              <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t("profile.namePlaceholder")} />
             </div>
             <div>
               <Label>Email</Label>
@@ -198,40 +157,26 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Password */}
         <Card>
           <CardHeader>
-            <CardTitle>Alterar Senha</CardTitle>
-            <CardDescription>Deixe em branco para manter a senha atual</CardDescription>
+            <CardTitle>{t("profile.changePassword")}</CardTitle>
+            <CardDescription>{t("profile.keepPassword")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="newPassword">Nova Senha</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Nova senha"
-              />
+              <Label htmlFor="newPassword">{t("profile.newPassword")}</Label>
+              <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("profile.newPassword")} />
             </div>
             <div>
-              <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirmar senha"
-              />
+              <Label htmlFor="confirmPassword">{t("profile.confirmPassword")}</Label>
+              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t("profile.confirmPassword")} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Save Button */}
         <Button onClick={handleSave} disabled={saving} className="w-full gap-2" size="lg">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Salvar Alterações
+          {t("profile.save")}
         </Button>
       </div>
     </div>
