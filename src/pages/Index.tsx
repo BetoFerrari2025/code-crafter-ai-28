@@ -44,6 +44,7 @@ const Index = () => {
             </h1>
             <p className="text-base md:text-xl lg:text-2xl text-muted-foreground min-h-[3rem] md:min-h-[3.5rem]">
               <TypeAnimation
+                key={`${t("hero.typing1")}-${t("hero.typing2")}-${t("hero.typing3")}`}
                 sequence={[
                   t("hero.typing1"),
                   2500,
