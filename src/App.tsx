@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
+import { usePresenceTracker } from "@/hooks/usePresenceTracker";
 import Index from "./pages/Index";
 import Editor from "./pages/Editor";
 import NotFound from "./pages/NotFound";
@@ -19,7 +20,9 @@ import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  usePresenceTracker();
+  return (
   <LanguageProvider>
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
@@ -44,7 +47,8 @@ const App = () => (
       </QueryClientProvider>
     </ThemeProvider>
   </LanguageProvider>
-);
+  );
+};
 
 export default App;
 
