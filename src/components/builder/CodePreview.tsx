@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCodeCompiler } from "@/hooks/useCodeCompiler";
 import { useCodeHistory } from "@/hooks/useCodeHistory";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ViewMode = "desktop" | "tablet" | "mobile";
 type DisplayMode = "code" | "preview";
@@ -75,6 +76,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const [supabaseKey, setSupabaseKey] = useState("");
   const [supabaseConnected, setSupabaseConnected] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   const { compile, cleanCode, isCompiling } = useCodeCompiler();
@@ -84,7 +86,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     const result = compile(code);
     setPreviewHtml(result.html);
     setCompilationError(result.error);
-    setPreviewLoadError(result.html ? null : "Falha ao gerar o preview.");
+    setPreviewLoadError(result.html ? null : t("preview.loadFailed"));
     
     if (result.error) {
       const telemetry: PreviewErrorTelemetry = {
@@ -107,7 +109,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     if (!displayCode) return;
     updatePreviewFromCode(displayCode);
     setRefreshKey((k) => k + 1);
-    toast({ title: "Preview recarregado", description: "Nova tentativa de renderização executada." });
+    toast({ title: t("preview.reload"), description: t("preview.reloadDesc") });
   }, [displayCode, updatePreviewFromCode, toast]);
 
   // Captura erros de runtime do iframe via postMessage
@@ -135,7 +137,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       const cleaned = cleanCode(generatedCode);
       setDisplayCode(cleaned);
       setEditedCode(cleaned);
-      addVersion(cleaned, 'Código gerado pela IA');
+      addVersion(cleaned, t("preview.aiGenerated"));
 
       updatePreviewFromCode(generatedCode);
 
@@ -152,7 +154,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       setEditedCode(version.code);
       updatePreviewFromCode(version.code);
       if (onCodeChange) onCodeChange(version.code);
-      toast({ title: "Desfazer", description: "Versão anterior restaurada" });
+      toast({ title: t("preview.undo"), description: t("preview.undoDesc") });
     }
   }, [undo, onCodeChange, toast, updatePreviewFromCode]);
 
@@ -163,7 +165,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       setEditedCode(version.code);
       updatePreviewFromCode(version.code);
       if (onCodeChange) onCodeChange(version.code);
-      toast({ title: "Refazer", description: "Versão seguinte restaurada" });
+      toast({ title: t("preview.redo"), description: t("preview.redoDesc") });
     }
   }, [redo, onCodeChange, toast, updatePreviewFromCode]);
 
@@ -174,7 +176,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       setEditedCode(version.code);
       updatePreviewFromCode(version.code);
       if (onCodeChange) onCodeChange(version.code);
-      toast({ title: "Restaurado", description: `Versão ${index + 1} restaurada` });
+      toast({ title: t("preview.versionRestored"), description: `${t("preview.versionRestoredDesc")} ${index + 1}` });
     }
   }, [restoreVersion, onCodeChange, toast, updatePreviewFromCode]);
 
@@ -188,10 +190,10 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     if (!lastWorkingCode) return;
     setDisplayCode(lastWorkingCode);
     setEditedCode(lastWorkingCode);
-    addVersion(lastWorkingCode, 'Restaurado (última versão funcional)');
+    addVersion(lastWorkingCode, t("preview.restoredWorking"));
     updatePreviewFromCode(lastWorkingCode);
     if (onCodeChange) onCodeChange(lastWorkingCode);
-    toast({ title: "Restaurado!", description: "Última versão funcional restaurada com sucesso." });
+    toast({ title: t("preview.restore") + "!", description: t("preview.restoreDesc") });
   }, [lastWorkingCode, addVersion, updatePreviewFromCode, onCodeChange, toast]);
 
   const getPreviewWidth = () => {
@@ -212,7 +214,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     link.href = URL.createObjectURL(blob);
     link.download = "component.tsx";
     link.click();
-    toast({ title: "Download", description: "Código baixado com sucesso!" });
+    toast({ title: "Download", description: t("preview.downloadDesc") });
   };
 
   const handleCopyCode = async () => {
@@ -221,22 +223,22 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       await navigator.clipboard.writeText(displayCode);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-      toast({ title: "Copiado!", description: "Código copiado para a área de transferência" });
+      toast({ title: t("preview.copied"), description: t("preview.copiedDesc") });
     } catch {
-      toast({ title: "Erro", description: "Não foi possível copiar", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("preview.copyError"), variant: "destructive" });
     }
   };
 
   const handleSaveEdit = () => {
     setDisplayCode(editedCode);
     setIsEditing(false);
-    addVersion(editedCode, 'Editado manualmente');
+    addVersion(editedCode, t("preview.manualEdit"));
     
     updatePreviewFromCode(editedCode);
     
     if (onCodeChange) onCodeChange(editedCode);
     
-    toast({ title: "Salvo!", description: "Alterações aplicadas ao preview" });
+    toast({ title: t("preview.saved"), description: t("preview.savedDesc") });
   };
 
   const handleSaveAndShare = async () => {
@@ -248,8 +250,8 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       
       if (sessionError || !session) {
         toast({
-          title: "Login necessário",
-          description: "Redirecionando para a página de login...",
+          title: t("preview.loginNeeded"),
+          description: t("preview.loginRedirect"),
         });
         navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
         return;
@@ -283,14 +285,14 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       window.open(url, '_blank');
 
       toast({
-        title: "✅ Projeto salvo e compartilhado!",
-        description: "Link copiado e aberto em nova aba.",
+        title: t("preview.projectSaved"),
+        description: t("preview.projectSavedDesc"),
       });
     } catch (error: any) {
       console.error('Error saving project:', error);
       toast({
-        title: "Erro ao salvar",
-        description: error?.message || "Não foi possível salvar o projeto. Tente novamente.",
+        title: t("preview.saveError"),
+        description: error?.message || t("preview.saveErrorDesc"),
         variant: "destructive",
       });
     } finally {
@@ -300,22 +302,22 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
 
   const handleConnectGithub = () => {
     if (!githubRepo || !githubToken) {
-      toast({ title: "Erro", description: "Preencha o repositório e o token.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("connect.fillFields"), variant: "destructive" });
       return;
     }
     setGithubConnected(true);
     setShowGithubDialog(false);
-    toast({ title: "✅ GitHub conectado!", description: `Repositório ${githubRepo} vinculado.` });
+    toast({ title: t("connect.githubSuccess"), description: `${t("connect.repoLinked")} ${githubRepo}` });
   };
 
   const handleConnectSupabase = () => {
     if (!supabaseUrl || !supabaseKey) {
-      toast({ title: "Erro", description: "Preencha a URL e a chave.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("connect.fillUrlKey"), variant: "destructive" });
       return;
     }
     setSupabaseConnected(true);
     setShowSupabaseDialog(false);
-    toast({ title: "✅ Supabase conectado!", description: "Projeto vinculado com sucesso." });
+    toast({ title: t("connect.supabaseConnected"), description: t("connect.supabaseConnectedDesc") });
   };
 
   return (
@@ -334,49 +336,49 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                 title="Visualizar"
               >
                 <Eye className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Preview</span>
+                <span className="hidden sm:inline">{t("preview.preview")}</span>
               </Button>
               <Button
                 variant={displayMode === "code" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setDisplayMode("code")}
                 className="h-8 px-3"
-                title="Ver código"
+                title={t("preview.code")}
               >
                 <Code2 className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Código</span>
+                <span className="hidden sm:inline">{t("preview.code")}</span>
               </Button>
             </div>
 
             {/* Undo/Redo */}
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title="Desfazer" className="h-8 w-8">
+              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title={t("preview.undo")} className="h-8 w-8">
                 <Undo2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title="Refazer" className="h-8 w-8">
+              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title={t("preview.redo")} className="h-8 w-8">
                 <Redo2 className="h-4 w-4" />
               </Button>
             </div>
 
-            <Button variant="ghost" size="icon" onClick={handleCopyCode} disabled={!displayCode} title="Copiar código" className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleCopyCode} disabled={!displayCode} title={t("preview.copyCode")} className="h-8 w-8">
               {isCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleRecompilePreview} disabled={!displayCode} title="Recarregar preview" className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleRecompilePreview} disabled={!displayCode} title={t("preview.reload")} className="h-8 w-8">
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleDownloadCode} disabled={!displayCode} title="Baixar código" className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleDownloadCode} disabled={!displayCode} title={t("preview.download")} className="h-8 w-8">
               <Download className="h-4 w-4" />
             </Button>
             <Button variant="default" size="sm" onClick={handleSaveAndShare} disabled={!displayCode || isSaving} className="gap-2 h-8">
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-              <span className="hidden sm:inline">Publicar</span>
+              <span className="hidden sm:inline">{t("preview.publish")}</span>
             </Button>
             <Button
               variant={showHistory ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setShowHistory(!showHistory)}
               disabled={history.length === 0}
-              title="Histórico de versões"
+              title={t("preview.versionHistory")}
               className="h-8 w-8"
             >
               <Clock className="h-4 w-4" />
@@ -390,7 +392,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
               variant={githubConnected ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setShowGithubDialog(true)}
-              title={githubConnected ? "GitHub conectado" : "Conectar GitHub"}
+              title={githubConnected ? t("connect.githubConnected") : t("connect.github")}
               className="h-8 w-8 relative"
             >
               <Github className="h-4 w-4" />
@@ -404,7 +406,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
               variant={supabaseConnected ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setShowSupabaseDialog(true)}
-              title={supabaseConnected ? "Supabase conectado" : "Conectar Supabase"}
+              title={supabaseConnected ? t("connect.supabaseConnected") : t("connect.supabase")}
               className="h-8 w-8 relative"
             >
               <Database className="h-4 w-4" />
@@ -429,7 +431,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
 
           <div className="text-sm text-muted-foreground flex items-center gap-2">
             {(isGenerating || isCompiling) && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isGenerating ? "Gerando código..." : isCompiling ? "Compilando..." : "Preview ao vivo"}
+            {isGenerating ? t("preview.generating") : isCompiling ? t("preview.compiling") : t("preview.livePreview")}
           </div>
         </div>
 
@@ -448,8 +450,8 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                         <div className="w-3 h-3 rounded-full bg-primary/60" />
                         <span className="text-xs text-muted-foreground ml-2">
                           {displayMode === "preview"
-                            ? compilationError ? "Erro no preview" : "Visualização interativa"
-                            : "Código gerado pela IA"}
+                            ? compilationError ? t("preview.previewError") : t("preview.interactiveView")
+                            : t("preview.aiCode")}
                         </span>
                       </div>
 
@@ -465,7 +467,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                                 className="h-7 text-xs gap-1 animate-fade-in"
                               >
                                 <Undo2 className="h-3 w-3" />
-                                Restaurar
+                                {t("preview.restore")}
                               </Button>
                             )}
                             {onRequestFix && (
@@ -476,7 +478,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                                 className="h-7 text-xs gap-1 animate-fade-in"
                               >
                                 <Wrench className="h-3 w-3" />
-                                Tentar corrigir
+                                {t("preview.tryFix")}
                               </Button>
                             )}
                           </div>
@@ -486,12 +488,12 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                           <>
                             {!isEditing ? (
                               <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="h-7 text-xs">
-                                <Pencil className="h-3 w-3 mr-1" /> Editar
+                                <Pencil className="h-3 w-3 mr-1" /> {t("preview.edit")}
                               </Button>
                             ) : (
                               <>
                                 <Button size="sm" variant="default" onClick={handleSaveEdit} className="h-7 text-xs">
-                                  <Save className="h-3 w-3 mr-1" /> Salvar
+                                  <Save className="h-3 w-3 mr-1" /> {t("preview.save")}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -516,11 +518,11 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                         <div className="h-full flex items-center justify-center p-6">
                           <div className="max-w-md text-center space-y-3 animate-fade-in">
                             <p className="text-sm text-destructive font-medium">
-                              {previewLoadError || "O preview foi carregado em branco."}
+                              {previewLoadError || t("preview.emptyPreview")}
                             </p>
                             <Button size="sm" onClick={handleRecompilePreview} className="gap-2">
                               <RefreshCw className="h-3.5 w-3.5" />
-                              Recarregar preview
+                              {t("preview.reload")}
                             </Button>
                           </div>
                         </div>
@@ -531,7 +533,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                           className="w-full h-full border-0"
                           title="Preview"
                           sandbox="allow-scripts allow-same-origin"
-                          onError={() => setPreviewLoadError("Falha ao carregar o preview.")}
+                          onError={() => setPreviewLoadError(t("preview.loadError"))}
                           onLoad={(event) => {
                             try {
                               const doc = event.currentTarget.contentDocument;
@@ -540,7 +542,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                               const hasBodyContent = Boolean(doc?.body?.innerText?.trim().length);
 
                               if (!hasRootContent && !hasBodyContent) {
-                                setPreviewLoadError("Preview carregou em branco.");
+                                setPreviewLoadError(t("preview.loadedBlank"));
                               } else {
                                 setPreviewLoadError(null);
                               }
@@ -570,10 +572,9 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                     <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                       <Monitor className="h-8 w-8 text-primary-foreground" />
                     </div>
-                    <h3 className="text-2xl font-bold">Seu App Aqui</h3>
+                    <h3 className="text-2xl font-bold">{t("preview.yourApp")}</h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                      O código gerado pela IA aparecerá aqui em tempo real.
-                      Descreva o que você quer criar no chat e veja o resultado instantaneamente.
+                      {t("preview.yourAppDesc")}
                     </p>
                   </div>
                 </div>
@@ -598,31 +599,31 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Github className="h-5 w-5" /> Conectar GitHub
+              <Github className="h-5 w-5" /> {t("connect.github")}
             </DialogTitle>
-            <DialogDescription>Vincule um repositório GitHub ao seu projeto.</DialogDescription>
+            <DialogDescription>{t("connect.githubDesc")}</DialogDescription>
           </DialogHeader>
           {githubConnected ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">Conectado</Badge>
+                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">{t("connect.connected")}</Badge>
                 <span className="text-sm text-muted-foreground">{githubRepo}</span>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => { setGithubConnected(false); setGithubRepo(""); setGithubToken(""); toast({ title: "GitHub desconectado" }); }} className="w-full">
-                Desconectar
+              <Button variant="destructive" size="sm" onClick={() => { setGithubConnected(false); setGithubRepo(""); setGithubToken(""); toast({ title: t("connect.githubDisconnected") }); }} className="w-full">
+                {t("connect.disconnect")}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <Label className="text-sm">Repositório (owner/repo)</Label>
-                <Input placeholder="usuario/meu-projeto" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="mt-1.5" />
+                <Label className="text-sm">{t("connect.repo")}</Label>
+                <Input placeholder="user/my-project" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="mt-1.5" />
               </div>
               <div>
-                <Label className="text-sm">Personal Access Token</Label>
+                <Label className="text-sm">{t("connect.token")}</Label>
                 <Input placeholder="ghp_xxxx..." value={githubToken} onChange={(e) => setGithubToken(e.target.value)} className="mt-1.5" type="password" />
               </div>
-              <Button onClick={handleConnectGithub} className="w-full">Conectar GitHub</Button>
+              <Button onClick={handleConnectGithub} className="w-full">{t("connect.github")}</Button>
             </div>
           )}
         </DialogContent>
@@ -633,31 +634,31 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" /> Conectar Supabase
+              <Database className="h-5 w-5" /> {t("connect.supabase")}
             </DialogTitle>
-            <DialogDescription>Vincule um projeto Supabase para banco de dados e autenticação.</DialogDescription>
+            <DialogDescription>{t("connect.supabaseDesc")}</DialogDescription>
           </DialogHeader>
           {supabaseConnected ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">Conectado</Badge>
+                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">{t("connect.connected")}</Badge>
                 <span className="text-sm text-muted-foreground truncate">{supabaseUrl}</span>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => { setSupabaseConnected(false); setSupabaseUrl(""); setSupabaseKey(""); toast({ title: "Supabase desconectado" }); }} className="w-full">
-                Desconectar
+              <Button variant="destructive" size="sm" onClick={() => { setSupabaseConnected(false); setSupabaseUrl(""); setSupabaseKey(""); toast({ title: t("connect.supabaseDisconnected") }); }} className="w-full">
+                {t("connect.disconnect")}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <Label className="text-sm">URL do Projeto</Label>
+                <Label className="text-sm">{t("connect.projectUrl")}</Label>
                 <Input placeholder="https://xxxxx.supabase.co" value={supabaseUrl} onChange={(e) => setSupabaseUrl(e.target.value)} className="mt-1.5" />
               </div>
               <div>
-                <Label className="text-sm">Chave Anon (pública)</Label>
+                <Label className="text-sm">{t("connect.anonKey")}</Label>
                 <Input placeholder="eyJhbGciOiJIUzI1..." value={supabaseKey} onChange={(e) => setSupabaseKey(e.target.value)} className="mt-1.5" type="password" />
               </div>
-              <Button onClick={handleConnectSupabase} className="w-full">Conectar Supabase</Button>
+              <Button onClick={handleConnectSupabase} className="w-full">{t("connect.supabase")}</Button>
             </div>
           )}
         </DialogContent>
