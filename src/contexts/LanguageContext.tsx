@@ -271,6 +271,7 @@ const translations: Record<string, Record<Language, string>> = {
   "chat.fixError": { pt: "Por favor, corrija o seguinte erro de compilação no código:", en: "Please fix the following compilation error in the code:" },
   "chat.fixCode": { pt: "Por favor, corrija o seguinte erro no código:", en: "Please fix the following error in the code:" },
   "chat.tryFix": { pt: "Tentar corrigir", en: "Try to fix" },
+  "chat.retry": { pt: "Tentar novamente", en: "Try again" },
   "chat.shiftEnter": { pt: "Shift+Enter para nova linha • Enter para enviar", en: "Shift+Enter for new line • Enter to send" },
   "chat.sessionExpired": { pt: "Sessão expirada. Faça login novamente.", en: "Session expired. Please sign in again." },
   "chat.history": { pt: "Histórico", en: "History" },
