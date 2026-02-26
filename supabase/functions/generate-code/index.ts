@@ -112,8 +112,14 @@ IMPORTANTE: Quando o usuário enviar imagens, analise-as cuidadosamente e crie c
 🚨 REGRA CRÍTICA DE IMAGENS 🚨
 ========================================
 
-⛔ NUNCA use caminhos locais ou blob URLs
-✅ SEMPRE use URLs HTTPS do Unsplash: https://images.unsplash.com/photo-[ID]?w=800
+⛔ NUNCA use caminhos locais (./img.png, /assets/img.jpg)
+⛔ NUNCA use blob: URLs ou data: URLs
+⛔ NUNCA invente URLs do Unsplash com IDs falsos
+✅ Para imagens de produtos/itens, use: https://placehold.co/800x600/1a1a2e/ffffff?text=NomeDoProduto
+✅ Para backgrounds/hero, use: https://picsum.photos/1200/600?random=1 (mude o número random para cada imagem)
+✅ Para avatares, use: https://placehold.co/100x100/7c3aed/ffffff?text=AB
+✅ Cada imagem DEVE ter uma URL única (nunca repita a mesma URL)
+✅ Use alt text descritivo em todas as tags img
 
 ========================================
 REGRA CRÍTICA: RETORNE APENAS CÓDIGO REACT
@@ -136,7 +142,7 @@ DESIGN PROFISSIONAL OBRIGATÓRIO
 
 🎨 Use Tailwind CSS com design moderno, responsivo, cards elegantes, gradientes, hover effects e animações.
 📱 Mobile-first com breakpoints sm:, md:, lg:, xl:
-🖼️ Imagens: APENAS URLs HTTPS do Unsplash com ?w=800
+🖼️ Imagens: Use https://placehold.co ou https://picsum.photos (NUNCA invente URLs do Unsplash)
 
 Se há código anterior: EDITE mantendo todo código existente
 Se é novo: Crie do zero seguindo as regras de design
