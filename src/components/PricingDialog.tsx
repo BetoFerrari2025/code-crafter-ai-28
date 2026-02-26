@@ -31,7 +31,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
             "Funções e permissões do usuário",
           ],
           buttonVariant: "default" as const,
-          link: "https://buy.stripe.com/test_8x2bJ2fo09xqfxj9wX0VO00",
+          link: "https://pay.lowify.com.br/checkout.php?product_id=FmnrzU",
         },
         {
           name: "Pró",
@@ -48,7 +48,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
             "Modelos de design",
           ],
           buttonVariant: "outline" as const,
-          link: "https://buy.stripe.com/test_6oU5kE6Ru8tm4SFeRh0VO01",
+          link: "https://pay.lowify.com.br/go.php?offer=jm91bzv",
         },
         {
           name: "Premium",
@@ -66,7 +66,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
             "Sistemas de design personalizados",
           ],
           buttonVariant: "outline" as const,
-          link: "https://buy.stripe.com/test_eVqdRaejW4d670N10r0VO02",
+          link: "https://pay.lowify.com.br/go.php?offer=t6f7eij",
         },
       ]
     : [
@@ -88,7 +88,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
             "User roles & permissions",
           ],
           buttonVariant: "default" as const,
-          link: "https://buy.stripe.com/test_8x2bJ2fo09xqfxj9wX0VO00",
+          link: "https://adsroi.com.br/checkout/5IMn7I?offer=offer-1772128000363&aff=[ID_AFILIADO]",
         },
         {
           name: "Pro",
@@ -105,7 +105,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
             "Design templates",
           ],
           buttonVariant: "outline" as const,
-          link: "https://buy.stripe.com/test_6oU5kE6Ru8tm4SFeRh0VO01",
+          link: "https://adsroi.com.br/checkout/5IMn7I?offer=offer-1772127879604&aff=[ID_AFILIADO]",
         },
         {
           name: "Premium",
@@ -123,7 +123,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
             "Custom design systems",
           ],
           buttonVariant: "outline" as const,
-          link: "https://buy.stripe.com/test_eVqdRaejW4d670N10r0VO02",
+          link: "https://adsroi.com.br/checkout/5IMn7I?offer=offer-1772128044563&aff=[ID_AFILIADO]",
         },
       ];
 
