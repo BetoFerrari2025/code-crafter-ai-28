@@ -11,6 +11,7 @@ type AuthMode = "login" | "signup" | "forgot-password";
 export default function AuthPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [displayName, setDisplayName] = useState("")
   const [phone, setPhone] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [mode, setMode] = useState<AuthMode>("login")
@@ -84,6 +85,7 @@ export default function AuthPage() {
           options: {
             emailRedirectTo: `${window.location.origin}${redirectTo}`,
             data: {
+              display_name: displayName || undefined,
               phone: phone || undefined,
               locale: userLocale,
             }
@@ -95,8 +97,7 @@ export default function AuthPage() {
           toast({ title: t("auth.accountDone"), description: t("auth.redirecting") });
           setTimeout(() => navigate(redirectTo), 100)
         } else {
-          setMessage(t("auth.accountCreatedLogin"))
-          setMode("login")
+          navigate("/confirm-email")
         }
       }
     } catch (err: any) {
@@ -146,6 +147,10 @@ export default function AuthPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input type="email" placeholder={t("auth.emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} className="border border-border rounded-lg px-3 py-2 bg-background text-foreground" required disabled={isLoading} />
           
+          {mode === "signup" && (
+            <input type="text" placeholder={t("auth.namePlaceholder")} value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="border border-border rounded-lg px-3 py-2 bg-background text-foreground" disabled={isLoading} />
+          )}
+
           {mode === "signup" && (
             <input type="tel" placeholder={t("auth.phonePlaceholder")} value={phone} onChange={(e) => setPhone(e.target.value)} className="border border-border rounded-lg px-3 py-2 bg-background text-foreground" disabled={isLoading} />
           )}

@@ -17,6 +17,7 @@ import SharedProject from "./pages/SharedProject";
 import Gallery from "./pages/Gallery";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import ConfirmEmail from "./pages/ConfirmEmail";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => {
               <Route path="/shared/:token" element={<SharedProject />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/confirm-email" element={<ConfirmEmail />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
