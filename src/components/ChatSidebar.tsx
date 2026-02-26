@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Code2, Sparkles, Loader2, Image as ImageIcon, X, AlertTriangle, RefreshCw, Zap } from "lucide-react";
+import { Send, Code2, Sparkles, Loader2, Image as ImageIcon, X, AlertTriangle, RefreshCw, Zap, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CreditsExhaustedAlert from "@/components/CreditsExhaustedAlert";
 import ReactMarkdown from "react-markdown";
+import ConversationHistory from "@/components/ConversationHistory";
 
 interface Message {
   id: string;
@@ -24,9 +25,11 @@ interface ChatSidebarProps {
   currentCode?: string;
   fixRequest?: string;
   onFixRequestHandled?: () => void;
+  initialPrompt?: string;
+  onInitialPromptHandled?: () => void;
 }
 
-const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled }: ChatSidebarProps) => {
+const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled, initialPrompt, onInitialPromptHandled }: ChatSidebarProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -43,6 +46,8 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   const [creditsInfo, setCreditsInfo] = useState<{ used: number; max: number; remaining: number } | null>(null);
   const [showCreditsAlert, setShowCreditsAlert] = useState(false);
   const [creditsAlertMessage, setCreditsAlertMessage] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -56,6 +61,14 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       if (onFixRequestHandled) onFixRequestHandled();
     }
   }, [fixRequest]);
+
+  // Auto-send initial prompt from Index page
+  useEffect(() => {
+    if (initialPrompt && !isLoading) {
+      handleSend(initialPrompt);
+      if (onInitialPromptHandled) onInitialPromptHandled();
+    }
+  }, [initialPrompt]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -125,6 +138,14 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     const imagesToSend = [...selectedImages];
     setSelectedImages([]);
     setIsLoading(true);
+
+    // Save user message to DB
+    try {
+      const convId = await ensureConversation(messageContent.slice(0, 60));
+      await saveMessage(convId, "user", userMessage.content);
+    } catch (e) {
+      console.error("Error saving message:", e);
+    }
     scrollToBottom();
 
     const statusMessageId = (Date.now() + 1).toString();
@@ -208,12 +229,15 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
           const data = line.slice(6);
           if (data === '[DONE]') {
             setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
+            const doneMsg = "✅ Código gerado com sucesso! Veja o preview ao lado.";
             setMessages((prev) => [...prev, {
               id: (Date.now() + 2).toString(),
               role: "assistant",
-              content: "✅ Código gerado com sucesso! Veja o preview ao lado.",
+              content: doneMsg,
               timestamp: new Date(),
             }]);
+            // Save assistant response to DB
+            if (conversationId) saveMessage(conversationId, "assistant", doneMsg);
             setLastErrorMessage("");
             toast({ title: "Código gerado!", description: "O código foi gerado com sucesso." });
             scrollToBottom();
@@ -266,8 +290,71 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Save message to DB
+  const saveMessage = async (convId: string, role: string, content: string) => {
+    await supabase.from("chat_messages").insert({ conversation_id: convId, role, content });
+  };
+
+  // Create or get conversation
+  const ensureConversation = async (title: string): Promise<string> => {
+    if (conversationId) return conversationId;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({ user_id: session.user.id, title: title.slice(0, 60) })
+      .select("id")
+      .single();
+    if (error || !data) throw error || new Error("Failed to create conversation");
+    setConversationId(data.id);
+    return data.id;
+  };
+
+  // Load conversation from history
+  const loadConversation = async (convId: string) => {
+    const { data } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("conversation_id", convId)
+      .order("created_at", { ascending: true });
+    if (data) {
+      const loaded: Message[] = data.map((m: any) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        isCode: m.is_code,
+        isError: m.is_error,
+        timestamp: new Date(m.created_at),
+      }));
+      setMessages(loaded);
+      setConversationId(convId);
+      setShowSuggestions(false);
+      scrollToBottom();
+    }
+  };
+
+  const handleNewConversation = () => {
+    setConversationId(null);
+    setMessages([{
+      id: "1",
+      role: "assistant",
+      content: "Olá! 👋 Estou pronto para criar seu app. Me diga o que você precisa!",
+      timestamp: new Date(),
+    }]);
+    setShowSuggestions(true);
+  };
+
   return (
-    <div className="w-[400px] h-full bg-sidebar border-r border-sidebar-border flex flex-col">
+    <div className="w-[400px] h-full bg-sidebar border-r border-sidebar-border flex flex-col relative">
+      {/* Conversation History Overlay */}
+      <ConversationHistory
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        currentConversationId={conversationId}
+        onSelectConversation={loadConversation}
+        onNewConversation={handleNewConversation}
+      />
+
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
@@ -281,6 +368,9 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
               <p className="text-xs text-muted-foreground">Online</p>
             </div>
           </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowHistory(true)}>
+            <History className="h-4 w-4" />
+          </Button>
           {creditsInfo && (
             <div className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
               <Zap className="h-3 w-3" />

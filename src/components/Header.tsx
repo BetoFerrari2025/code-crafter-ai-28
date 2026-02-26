@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Gift, Bell, Settings, UserPlus, HelpCircle, Palette, LogOut, ChevronRight } from "lucide-react";
+import { Gift, Bell, Settings, UserPlus, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 import PricingDialog from "./PricingDialog";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ const Header = () => {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -105,6 +107,9 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-2 md:gap-3">
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleTheme}>
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           {user ? (
             <>
               <Button variant="ghost" size="icon" className="rounded-full hidden md:flex">
@@ -195,10 +200,10 @@ const Header = () => {
                         <HelpCircle className="h-4 w-4 mr-2" />
                         Centro de Ajuda
                       </Button>
-                      <Button variant="ghost" className="w-full justify-between" size="sm">
+                      <Button variant="ghost" className="w-full justify-between" size="sm" onClick={toggleTheme}>
                         <div className="flex items-center">
-                          <Palette className="h-4 w-4 mr-2" />
-                          Aparência
+                          {theme === "dark" ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                          {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
                         </div>
                         <ChevronRight className="h-3 w-3" />
                       </Button>
