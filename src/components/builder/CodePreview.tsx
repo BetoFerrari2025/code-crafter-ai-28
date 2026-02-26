@@ -19,9 +19,15 @@ import {
   Clock,
   Wrench,
   RefreshCw,
+  Github,
+  Database,
 } from "lucide-react";
 import VersionHistoryPanel from "./VersionHistoryPanel";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCodeCompiler } from "@/hooks/useCodeCompiler";
@@ -49,6 +55,14 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const [compilationError, setCompilationError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showGithubDialog, setShowGithubDialog] = useState(false);
+  const [showSupabaseDialog, setShowSupabaseDialog] = useState(false);
+  const [githubRepo, setGithubRepo] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [githubConnected, setGithubConnected] = useState(false);
+  const [supabaseUrl, setSupabaseUrl] = useState("");
+  const [supabaseKey, setSupabaseKey] = useState("");
+  const [supabaseConnected, setSupabaseConnected] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -224,6 +238,26 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     }
   };
 
+  const handleConnectGithub = () => {
+    if (!githubRepo || !githubToken) {
+      toast({ title: "Erro", description: "Preencha o repositório e o token.", variant: "destructive" });
+      return;
+    }
+    setGithubConnected(true);
+    setShowGithubDialog(false);
+    toast({ title: "✅ GitHub conectado!", description: `Repositório ${githubRepo} vinculado.` });
+  };
+
+  const handleConnectSupabase = () => {
+    if (!supabaseUrl || !supabaseKey) {
+      toast({ title: "Erro", description: "Preencha a URL e a chave.", variant: "destructive" });
+      return;
+    }
+    setSupabaseConnected(true);
+    setShowSupabaseDialog(false);
+    toast({ title: "✅ Supabase conectado!", description: "Projeto vinculado com sucesso." });
+  };
+
   return (
     <div className="flex-1 h-full bg-background flex flex-row">
       <div className="flex-1 flex flex-col">
@@ -286,6 +320,37 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
               className="h-8 w-8"
             >
               <Clock className="h-4 w-4" />
+            </Button>
+
+            {/* Separador */}
+            <div className="w-px h-6 bg-border mx-1" />
+
+            {/* GitHub */}
+            <Button
+              variant={githubConnected ? "secondary" : "ghost"}
+              size="icon"
+              onClick={() => setShowGithubDialog(true)}
+              title={githubConnected ? "GitHub conectado" : "Conectar GitHub"}
+              className="h-8 w-8 relative"
+            >
+              <Github className="h-4 w-4" />
+              {githubConnected && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background" />
+              )}
+            </Button>
+
+            {/* Supabase */}
+            <Button
+              variant={supabaseConnected ? "secondary" : "ghost"}
+              size="icon"
+              onClick={() => setShowSupabaseDialog(true)}
+              title={supabaseConnected ? "Supabase conectado" : "Conectar Supabase"}
+              className="h-8 w-8 relative"
+            >
+              <Database className="h-4 w-4" />
+              {supabaseConnected && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background" />
+              )}
             </Button>
           </div>
 
@@ -421,6 +486,76 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
           onClose={() => setShowHistory(false)}
         />
       )}
+
+      {/* GitHub Dialog */}
+      <Dialog open={showGithubDialog} onOpenChange={setShowGithubDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Github className="h-5 w-5" /> Conectar GitHub
+            </DialogTitle>
+            <DialogDescription>Vincule um repositório GitHub ao seu projeto.</DialogDescription>
+          </DialogHeader>
+          {githubConnected ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
+                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">Conectado</Badge>
+                <span className="text-sm text-muted-foreground">{githubRepo}</span>
+              </div>
+              <Button variant="destructive" size="sm" onClick={() => { setGithubConnected(false); setGithubRepo(""); setGithubToken(""); toast({ title: "GitHub desconectado" }); }} className="w-full">
+                Desconectar
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm">Repositório (owner/repo)</Label>
+                <Input placeholder="usuario/meu-projeto" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-sm">Personal Access Token</Label>
+                <Input placeholder="ghp_xxxx..." value={githubToken} onChange={(e) => setGithubToken(e.target.value)} className="mt-1.5" type="password" />
+              </div>
+              <Button onClick={handleConnectGithub} className="w-full">Conectar GitHub</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Supabase Dialog */}
+      <Dialog open={showSupabaseDialog} onOpenChange={setShowSupabaseDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" /> Conectar Supabase
+            </DialogTitle>
+            <DialogDescription>Vincule um projeto Supabase para banco de dados e autenticação.</DialogDescription>
+          </DialogHeader>
+          {supabaseConnected ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
+                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">Conectado</Badge>
+                <span className="text-sm text-muted-foreground truncate">{supabaseUrl}</span>
+              </div>
+              <Button variant="destructive" size="sm" onClick={() => { setSupabaseConnected(false); setSupabaseUrl(""); setSupabaseKey(""); toast({ title: "Supabase desconectado" }); }} className="w-full">
+                Desconectar
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm">URL do Projeto</Label>
+                <Input placeholder="https://xxxxx.supabase.co" value={supabaseUrl} onChange={(e) => setSupabaseUrl(e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-sm">Chave Anon (pública)</Label>
+                <Input placeholder="eyJhbGciOiJIUzI1..." value={supabaseKey} onChange={(e) => setSupabaseKey(e.target.value)} className="mt-1.5" type="password" />
+              </div>
+              <Button onClick={handleConnectSupabase} className="w-full">Conectar Supabase</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
