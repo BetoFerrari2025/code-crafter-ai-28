@@ -140,25 +140,9 @@ const SharedProject = () => {
 
   return (
     <div className="w-full h-screen bg-background">
-      {/* Header minimalista */}
-      <div className="h-10 bg-muted/30 border-b border-border flex items-center justify-between px-4">
-        <span className="text-sm font-medium text-muted-foreground truncate max-w-[200px]">
-          {projectName}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Criado com</span>
-          <Link 
-            to="/" 
-            className="text-xs font-semibold text-primary hover:underline"
-          >
-            Criey
-          </Link>
-        </div>
-      </div>
-      
-      {/* Preview iframe */}
+      {/* Preview iframe - fullscreen sem header */}
       {previewLoadError || !previewHtml ? (
-        <div className="h-[calc(100vh-40px)] flex items-center justify-center p-6 bg-muted/20">
+        <div className="h-screen flex items-center justify-center p-6 bg-muted/20">
           <div className="text-center space-y-3 max-w-md">
             <p className="text-sm text-destructive font-medium">
               {previewLoadError || "O preview foi carregado em branco."}
@@ -173,8 +157,7 @@ const SharedProject = () => {
         <iframe
           key={`${refreshKey}-${previewHtml.slice(0, 120)}`}
           srcDoc={previewHtml}
-          className="w-full border-0"
-          style={{ height: 'calc(100vh - 40px)' }}
+          className="w-full h-full border-0"
           title={projectName || "Shared Project Preview"}
           sandbox="allow-scripts allow-same-origin"
           onError={() => setPreviewLoadError("Falha ao carregar o preview.")}
