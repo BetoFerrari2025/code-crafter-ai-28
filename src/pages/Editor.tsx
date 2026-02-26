@@ -5,6 +5,7 @@ import CodePreview from "@/components/builder/CodePreview";
 import Header from "@/components/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -13,6 +14,7 @@ const Editor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,15 +22,14 @@ const Editor = () => {
       
       if (!session) {
         toast({
-          title: "Acesso negado",
-          description: "Você precisa fazer login para acessar o chat.",
+          title: t("editor.accessDenied"),
+          description: t("editor.loginRequired"),
           variant: "destructive",
         });
         navigate("/auth");
         return;
       }
 
-      // Load existing project if projectId is passed
       const projectId = (location.state as any)?.projectId;
       if (projectId) {
         try {
@@ -41,8 +42,8 @@ const Editor = () => {
           if (!error && project?.code) {
             setGeneratedCode(project.code);
             toast({
-              title: `Projeto "${project.name}" carregado`,
-              description: "Continue editando seu projeto.",
+              title: `${project.name} ${t("editor.projectLoaded")}`,
+              description: t("editor.continueEditing"),
             });
           }
         } catch (e) {
@@ -50,10 +51,9 @@ const Editor = () => {
         }
       }
 
-      // Check for initial prompt from Index page
-      const initialPrompt = (location.state as any)?.initialPrompt;
-      if (initialPrompt) {
-        setInitialPrompt(initialPrompt);
+      const prompt = (location.state as any)?.initialPrompt;
+      if (prompt) {
+        setInitialPrompt(prompt);
       }
 
       setIsLoading(false);
@@ -61,7 +61,6 @@ const Editor = () => {
 
     checkAuth();
 
-    // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate("/auth");
@@ -76,7 +75,7 @@ const Editor = () => {
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verificando autenticação...</p>
+          <p className="text-muted-foreground">{t("editor.checkingAuth")}</p>
         </div>
       </div>
     );

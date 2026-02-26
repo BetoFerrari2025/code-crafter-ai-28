@@ -98,13 +98,12 @@ const Header = () => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
-          <Button variant="ghost" size="sm" className="rounded-full text-xs font-semibold gap-1" onClick={() => setLanguage(language === "pt" ? "en" : "pt")}>
-            <Globe className="h-4 w-4" />
-            {language === "pt" ? "PT" : "EN"}
+        <div className="flex items-center gap-1 md:gap-3">
+          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 md:h-10 md:w-10" onClick={() => setLanguage(language === "pt" ? "en" : "pt")} title={language === "pt" ? "Switch to English" : "Mudar para Português"}>
+            <span className="text-xs font-bold">{language === "pt" ? "PT" : "EN"}</span>
           </Button>
 
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleTheme}>
+          <Button variant="ghost" size="icon" className="rounded-full hidden md:flex" onClick={toggleTheme}>
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
@@ -222,10 +221,10 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Button variant="ghost" onClick={() => navigate("/auth")} className="text-sm md:text-base px-3 md:px-4">
+              <Button variant="ghost" onClick={() => navigate("/auth")} size="sm" className="text-sm px-3">
                 {t("nav.login")}
               </Button>
-              <Button onClick={() => navigate("/auth")} className="text-sm md:text-base px-4 md:px-6">
+              <Button onClick={() => navigate("/auth")} size="sm" className="text-sm px-3 md:px-6">
                 {t("nav.signup")}
               </Button>
             </>
