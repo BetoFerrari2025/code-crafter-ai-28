@@ -38,6 +38,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [lastErrorMessage, setLastErrorMessage] = useState<string>("");
+  const [lastUserInput, setLastUserInput] = useState<string>("");
   const [creditsInfo, setCreditsInfo] = useState<{ used: number; max: number; remaining: number } | null>(null);
   const [showCreditsAlert, setShowCreditsAlert] = useState(false);
   const [creditsAlertMessage, setCreditsAlertMessage] = useState("");
@@ -125,7 +126,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     const messageContent = overrideInput || input;
     if ((!messageContent.trim() && selectedImages.length === 0) || isLoading) return;
     setShowSuggestions(false);
-
+    setLastUserInput(messageContent);
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -449,10 +450,19 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
                   ) : (
                     <p>{message.content}</p>
                   )}
-                  {message.isError && message.errorDetails && (
-                    <Button variant="outline" size="sm" className="mt-2 gap-1 h-7 text-xs" onClick={() => handleRetryWithError(message.errorDetails!)}>
-                      <RefreshCw className="h-3 w-3" /> {t("chat.tryFix")}
-                    </Button>
+                  {message.isError && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.errorDetails && (
+                        <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={() => handleRetryWithError(message.errorDetails!)}>
+                          <RefreshCw className="h-3 w-3" /> {t("chat.tryFix")}
+                        </Button>
+                      )}
+                      {lastUserInput && (
+                        <Button variant="outline" size="sm" className="gap-1 h-7 text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={() => handleSend(lastUserInput)}>
+                          <RefreshCw className="h-3 w-3" /> Tentar novamente
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <span className={`text-[10px] text-muted-foreground/60 px-1 ${message.role === "user" ? "text-right" : "text-left"}`}>
