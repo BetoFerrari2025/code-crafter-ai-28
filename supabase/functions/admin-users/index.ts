@@ -51,6 +51,7 @@ serve(async (req) => {
           const profile = profiles?.find((p: any) => p.user_id === u.id);
           const userRoles = roles?.filter((r: any) => r.user_id === u.id).map((r: any) => r.role) || [];
           const userCredits = credits?.find((c: any) => c.user_id === u.id);
+          const userLocale = u.user_metadata?.locale || u.raw_user_meta_data?.locale || null;
           return {
             id: u.id,
             email: u.email,
@@ -65,6 +66,7 @@ serve(async (req) => {
             roles: userRoles,
             credits_used: userCredits?.credits_used || 0,
             max_credits: userCredits?.max_credits || 5,
+            country: userLocale,
           };
         });
 

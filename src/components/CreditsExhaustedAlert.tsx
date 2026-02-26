@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Zap } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CreditsExhaustedAlertProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface CreditsExhaustedAlertProps {
 
 const CreditsExhaustedAlert = ({ open, onOpenChange, message }: CreditsExhaustedAlertProps) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -20,18 +22,13 @@ const CreditsExhaustedAlert = ({ open, onOpenChange, message }: CreditsExhausted
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <DialogTitle className="text-xl">Créditos Esgotados</DialogTitle>
+            <DialogTitle className="text-xl">{t("credits.exhausted")}</DialogTitle>
           </div>
-          <DialogDescription className="text-base">
-            {message}
-          </DialogDescription>
+          <DialogDescription className="text-base">{message}</DialogDescription>
         </DialogHeader>
 
         <div className="bg-muted/50 rounded-lg p-4 my-4">
-          <p className="text-sm text-muted-foreground">
-            Seus créditos diários reiniciam automaticamente todos os dias à meia-noite (00:00). 
-            Para ter mais créditos, faça upgrade do seu plano.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("credits.resetInfo")}</p>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -39,18 +36,15 @@ const CreditsExhaustedAlert = ({ open, onOpenChange, message }: CreditsExhausted
             onClick={() => {
               onOpenChange(false);
               navigate("/dashboard");
-              // Small delay to let navigation complete, then trigger pricing dialog
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('open-pricing'));
-              }, 500);
+              setTimeout(() => { window.dispatchEvent(new CustomEvent('open-pricing')); }, 500);
             }}
             className="w-full gap-2"
           >
             <Zap className="h-4 w-4" />
-            Ver Planos e Preços
+            {t("credits.viewPlans")}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
-            Fechar
+            {t("credits.close")}
           </Button>
         </div>
       </DialogContent>

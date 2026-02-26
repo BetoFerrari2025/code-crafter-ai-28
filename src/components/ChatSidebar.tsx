@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CreditsExhaustedAlert from "@/components/CreditsExhaustedAlert";
 import ReactMarkdown from "react-markdown";
 import ConversationHistory from "@/components/ConversationHistory";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Message {
   id: string;
@@ -30,14 +31,8 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled, initialPrompt, onInitialPromptHandled }: ChatSidebarProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "Olá! 👋 Estou pronto para criar seu app. Me diga o que você precisa!",
-      timestamp: new Date(),
-    },
-  ]);
+  const { t } = useLanguage();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -53,10 +48,17 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
+  // Initialize welcome message with translation
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{ id: "1", role: "assistant", content: t("chat.welcome"), timestamp: new Date() }]);
+    }
+  }, []);
+
   // Auto-send fix request from preview errors
   useEffect(() => {
     if (fixRequest && !isLoading) {
-      const fixMsg = `Por favor, corrija o seguinte erro de compilação no código:\n\n${fixRequest}`;
+      const fixMsg = `${t("chat.fixError")}\n\n${fixRequest}`;
       handleSend(fixMsg);
       if (onFixRequestHandled) onFixRequestHandled();
     }
@@ -98,7 +100,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     });
     const base64Images = await Promise.all(imagePromises);
     setSelectedImages(prev => [...prev, ...base64Images]);
-    toast({ title: "Imagens carregadas", description: `${files.length} imagem(ns) adicionada(s)` });
+    toast({ title: t("chat.imagesLoaded"), description: `${files.length} ${t("chat.imagesAdded")}` });
   };
 
   const removeImage = (index: number) => {
@@ -106,17 +108,17 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   };
 
   const handleRetryWithError = useCallback((errorDetails: string) => {
-    const fixMessage = `Por favor, corrija o seguinte erro no código:\n\n${errorDetails}`;
+    const fixMessage = `${t("chat.fixCode")}\n\n${errorDetails}`;
     setInput(fixMessage);
-  }, []);
+  }, [t]);
 
   const promptSuggestions = [
-    { icon: "🛒", label: "Loja virtual com carrinho" },
-    { icon: "📋", label: "Dashboard de tarefas" },
-    { icon: "🔐", label: "Login com email e senha" },
-    { icon: "📊", label: "Gráficos de analytics" },
-    { icon: "💬", label: "Chat em tempo real" },
-    { icon: "🎨", label: "Melhore o design" },
+    { icon: "🛒", label: t("chat.sug1") },
+    { icon: "📋", label: t("chat.sug2") },
+    { icon: "🔐", label: t("chat.sug3") },
+    { icon: "📊", label: t("chat.sug4") },
+    { icon: "💬", label: t("chat.sug5") },
+    { icon: "🎨", label: t("chat.sug6") },
   ];
 
   const handleSend = async (overrideInput?: string) => {
@@ -127,7 +129,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: messageContent || "Gere código baseado nas imagens enviadas",
+      content: messageContent || t("chat.generateFromImages"),
       images: selectedImages.length > 0 ? selectedImages : undefined,
       timestamp: new Date(),
     };
@@ -152,7 +154,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     const statusMessage: Message = {
       id: statusMessageId,
       role: "assistant",
-      content: "🤔 Analisando sua solicitação...",
+      content: t("chat.analyzing"),
       isStatus: true,
       timestamp: new Date(),
     };
@@ -166,7 +168,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       
       messagesToSend.push({
         role: 'user',
-        content: messageContent || "Gere código baseado nas imagens enviadas",
+        content: messageContent || t("chat.generateFromImages"),
         images: imagesToSend.length > 0 ? imagesToSend : undefined,
       });
 
@@ -182,7 +184,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error('Sessão expirada. Faça login novamente.');
+        throw new Error(t("chat.sessionExpired"));
       }
 
       const response = await fetch(
@@ -200,7 +202,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       if (response.status === 429) {
         const errorData = await response.json();
         setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
-        setCreditsAlertMessage(errorData.message || 'Seus créditos diários acabaram.');
+        setCreditsAlertMessage(errorData.message || t("chat.creditsExhausted"));
         setShowCreditsAlert(true);
         setIsLoading(false);
         return;
@@ -229,7 +231,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
           const data = line.slice(6);
           if (data === '[DONE]') {
             setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
-            const doneMsg = "✅ Código gerado com sucesso! Veja o preview ao lado.";
+            const doneMsg = t("chat.codeGenerated");
             setMessages((prev) => [...prev, {
               id: (Date.now() + 2).toString(),
               role: "assistant",
@@ -239,7 +241,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
             // Save assistant response to DB
             if (conversationId) saveMessage(conversationId, "assistant", doneMsg);
             setLastErrorMessage("");
-            toast({ title: "Código gerado!", description: "O código foi gerado com sucesso." });
+            toast({ title: t("chat.codeToast"), description: t("chat.codeToastDesc") });
             scrollToBottom();
             continue;
           }
@@ -274,11 +276,11 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `${error instanceof Error ? error.message : 'Ocorreu um erro ao gerar o código.'}`,
+        content: `${error instanceof Error ? error.message : t("chat.errorOccurred")}`,
         isError: true,
         timestamp: new Date(),
       }]);
-      toast({ title: "Erro", description: "Não foi possível gerar o código.", variant: "destructive" });
+      toast({ title: t("chat.error"), description: t("chat.errorDesc"), variant: "destructive" });
     } finally {
       setIsLoading(false);
       scrollToBottom();
@@ -287,7 +289,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
 
   const formatTime = (date?: Date) => {
     if (!date) return "";
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   };
 
   // Save message to DB
@@ -338,7 +340,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     setMessages([{
       id: "1",
       role: "assistant",
-      content: "Olá! 👋 Estou pronto para criar seu app. Me diga o que você precisa!",
+      content: t("chat.welcome"),
       timestamp: new Date(),
     }]);
     setShowSuggestions(true);
@@ -427,7 +429,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
                   )}
                   {message.isError && message.errorDetails && (
                     <Button variant="outline" size="sm" className="mt-2 gap-1 h-7 text-xs" onClick={() => handleRetryWithError(message.errorDetails!)}>
-                      <RefreshCw className="h-3 w-3" /> Tentar corrigir
+                      <RefreshCw className="h-3 w-3" /> {t("chat.tryFix")}
                     </Button>
                   )}
                 </div>
@@ -455,7 +457,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
 
           {showSuggestions && messages.length <= 1 && !isLoading && (
             <div className="animate-fade-in space-y-3 pt-2">
-              <p className="text-xs text-muted-foreground font-medium">💡 Comece com uma sugestão:</p>
+              <p className="text-xs text-muted-foreground font-medium">{t("chat.suggestion")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {promptSuggestions.map((s, i) => (
                   <button
@@ -495,7 +497,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
             value={input}
             onChange={handleTextareaChange}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Descreva o que você quer criar..."
+            placeholder={t("chat.placeholder")}
             rows={1}
             className="w-full bg-transparent text-sm px-4 pt-3 pb-10 resize-none outline-none placeholder:text-muted-foreground/60 text-sidebar-foreground min-h-[44px] max-h-[160px]"
             disabled={isLoading}
@@ -510,7 +512,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
           </div>
         </div>
         <p className="text-[10px] text-muted-foreground/50 text-center mt-1.5">
-          Shift+Enter para nova linha • Enter para enviar
+          {t("chat.shiftEnter")}
         </p>
       </div>
 
