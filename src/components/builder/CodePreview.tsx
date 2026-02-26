@@ -18,6 +18,7 @@ import {
   Check,
   Clock,
   Wrench,
+  RefreshCw,
 } from "lucide-react";
 import VersionHistoryPanel from "./VersionHistoryPanel";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const [isCopied, setIsCopied] = useState(false);
   const [compilationError, setCompilationError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -265,6 +267,9 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
             <Button variant="ghost" size="icon" onClick={handleCopyCode} disabled={!displayCode} title="Copiar código" className="h-8 w-8">
               {isCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             </Button>
+            <Button variant="ghost" size="icon" onClick={() => setRefreshKey(k => k + 1)} disabled={!displayCode} title="Recarregar preview" className="h-8 w-8">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={handleDownloadCode} disabled={!displayCode} title="Baixar código" className="h-8 w-8">
               <Download className="h-4 w-4" />
             </Button>
@@ -368,7 +373,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                   <div className="flex-1 overflow-hidden">
                     {displayMode === "preview" ? (
                       <iframe
-                        key={viewMode + previewHtml.slice(0, 100)}
+                        key={`${viewMode}-${refreshKey}-${previewHtml.slice(0, 100)}`}
                         srcDoc={previewHtml}
                         className="w-full h-full border-0"
                         title="Preview"
