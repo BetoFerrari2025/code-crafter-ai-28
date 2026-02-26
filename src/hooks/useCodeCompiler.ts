@@ -26,11 +26,26 @@ export const useCodeCompiler = () => {
       .replace(/```/g, '')
       .trim();
 
+    // Extract lucide icon names before removing imports
+    const lucideImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]lucide-react['"];?/gm;
+    const lucideIcons: string[] = [];
+    let lucideMatch;
+    while ((lucideMatch = lucideImportRegex.exec(cleaned)) !== null) {
+      const icons = lucideMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+      lucideIcons.push(...icons);
+    }
+
     // Remove imports (não suportados no browser)
     cleaned = cleaned
       .replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
       .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
       .trim();
+
+    // Add lucide icon destructuring from the proxy
+    if (lucideIcons.length > 0) {
+      const uniqueIcons = [...new Set(lucideIcons)];
+      cleaned = `const { ${uniqueIcons.join(', ')} } = LucideIcons;\n${cleaned}`;
+    }
 
     // Trata export default
     if (/export\s+default\s+function\s+(\w+)/.test(cleaned)) {
@@ -75,6 +90,39 @@ export const useCodeCompiler = () => {
           const exports = {};
           const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext, useReducer } = React;
           const { createRoot } = ReactDOM;
+          const lucide = window.lucide || {};
+          
+          // Create a proxy to auto-generate Lucide icon components
+          const LucideIcons = new Proxy({}, {
+            get: function(target, prop) {
+              if (typeof prop !== 'string') return undefined;
+              const iconName = prop.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+              return function LucideIcon(props) {
+                const ref = React.useRef(null);
+                React.useEffect(() => {
+                  if (ref.current && lucide[prop]) {
+                    const attrs = {};
+                    if (props.size) { attrs.width = props.size; attrs.height = props.size; }
+                    if (props.color) attrs.stroke = props.color;
+                    if (props.strokeWidth) attrs['stroke-width'] = props.strokeWidth;
+                    try {
+                      const result = lucide.createElement(lucide[prop]);
+                      ref.current.innerHTML = '';
+                      ref.current.appendChild(result);
+                    } catch(e) {
+                      ref.current.innerHTML = '';
+                    }
+                  }
+                }, [props]);
+                const size = props.size || 24;
+                return React.createElement('span', {
+                  ref: ref,
+                  style: { display: 'inline-flex', width: size, height: size, alignItems: 'center', justifyContent: 'center', ...(props.style || {}) },
+                  className: props.className || ''
+                });
+              };
+            }
+          });
 
           try {
             ${transpiled}
@@ -104,11 +152,12 @@ export const useCodeCompiler = () => {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; img-src https: data: blob:; font-src https: data: https://fonts.gstatic.com; connect-src https:;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; img-src https: data: blob:; font-src https: data: https://fonts.gstatic.com; connect-src https:; worker-src blob:;" />
     <title>Preview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
       * { box-sizing: border-box; }

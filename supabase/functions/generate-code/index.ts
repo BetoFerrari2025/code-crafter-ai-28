@@ -143,6 +143,7 @@ DESIGN PROFISSIONAL OBRIGATÓRIO
 🎨 Use Tailwind CSS com design moderno, responsivo, cards elegantes, gradientes, hover effects e animações.
 📱 Mobile-first com breakpoints sm:, md:, lg:, xl:
 🖼️ Imagens: Use https://placehold.co ou https://picsum.photos (NUNCA invente URLs do Unsplash)
+🎯 Ícones: USE ícones do lucide-react para enriquecer a interface. Importe assim: import { Heart, Star, ShoppingCart, Menu, X, Search, User, Home, Settings, ArrowRight, Check, Phone, Mail, MapPin, Clock, Calendar } from 'lucide-react'; Use ícones relevantes em botões, cards, navegação, etc.
 
 Se há código anterior: EDITE mantendo todo código existente
 Se é novo: Crie do zero seguindo as regras de design
