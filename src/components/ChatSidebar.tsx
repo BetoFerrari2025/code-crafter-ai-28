@@ -459,7 +459,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
                       )}
                       {lastUserInput && (
                         <Button variant="outline" size="sm" className="gap-1 h-7 text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={() => handleSend(lastUserInput)}>
-                          <RefreshCw className="h-3 w-3" /> Tentar novamente
+                          <RefreshCw className="h-3 w-3" /> {t("chat.retry")}
                         </Button>
                       )}
                     </div>
