@@ -24,14 +24,7 @@ const Index = () => {
       return;
     }
 
-    toast({
-      title: "Iniciando projeto!",
-      description: "Preparando seu ambiente de desenvolvimento...",
-    });
-
-    setTimeout(() => {
-      navigate("/editor");
-    }, 1500);
+    navigate("/editor", { state: { initialPrompt: prompt } });
   };
 
   return (

@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [fixRequest, setFixRequest] = useState<string>("");
+  const [initialPrompt, setInitialPrompt] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,6 +50,12 @@ const Editor = () => {
         }
       }
 
+      // Check for initial prompt from Index page
+      const initialPrompt = (location.state as any)?.initialPrompt;
+      if (initialPrompt) {
+        setInitialPrompt(initialPrompt);
+      }
+
       setIsLoading(false);
     };
 
@@ -79,7 +86,7 @@ const Editor = () => {
     <div className="h-screen flex flex-col bg-background">
       <Header />
       <div className="flex-1 flex pt-16 overflow-hidden">
-        <ChatSidebar onCodeGenerated={setGeneratedCode} currentCode={generatedCode} fixRequest={fixRequest} onFixRequestHandled={() => setFixRequest("")} />
+        <ChatSidebar onCodeGenerated={setGeneratedCode} currentCode={generatedCode} fixRequest={fixRequest} onFixRequestHandled={() => setFixRequest("")} initialPrompt={initialPrompt} onInitialPromptHandled={() => setInitialPrompt("")} />
         <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
       </div>
     </div>
