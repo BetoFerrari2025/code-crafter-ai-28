@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminSidebar, type AdminView } from "@/components/admin/AdminSidebar";
+import { AdminMarketplace } from "@/components/admin/AdminMarketplace";
 import { AdminUserTable, type AdminUser } from "@/components/admin/AdminUserTable";
 import { AdminStats } from "@/components/admin/AdminStats";
 import { AdminOnline } from "@/components/admin/AdminOnline";
@@ -103,6 +104,8 @@ const Admin = () => {
         return <AdminUserTable users={users} loading={loading} onAction={handleAction} />;
       case "online":
         return <AdminOnline onlineCount={onlineCount} />;
+      case "marketplace":
+        return <AdminMarketplace />;
       default:
         return null;
     }
@@ -113,6 +116,7 @@ const Admin = () => {
     stats: t("admin.stats"),
     credits: t("admin.manageCredits"),
     online: t("admin.online"),
+    marketplace: t("marketplace.title"),
   };
 
   return (
