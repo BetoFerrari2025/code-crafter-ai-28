@@ -27,11 +27,26 @@ const ProjectThumbnailPreview = ({ code, projectName }: ProjectThumbnailPreviewP
         // não é JSON, segue o fluxo normal
       }
 
+      // Extract lucide icons before removing imports
+      const lucideImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]lucide-react['"];?/gm;
+      const lucideIcons: string[] = [];
+      let lucideMatch;
+      while ((lucideMatch = lucideImportRegex.exec(cleaned)) !== null) {
+        const icons = lucideMatch[1].split(',').map((s: string) => s.trim()).filter(Boolean);
+        lucideIcons.push(...icons);
+      }
+
       cleaned = cleaned
         .replace(/```[a-z]*\n?/gi, '')
         .replace(/```/g, '')
         .replace(/^import\s.+from\s.+;$/gm, '')
         .trim();
+
+      // Add lucide icon destructuring
+      if (lucideIcons.length > 0) {
+        const uniqueIcons = [...new Set(lucideIcons)];
+        cleaned = `const { ${uniqueIcons.join(', ')} } = LucideIcons;\n${cleaned}`;
+      }
 
       // Se tiver export default, mas não tiver const App
       if (/export\s+default\s+/.test(cleaned) && !/const\s+App\s*=/.test(cleaned)) {
@@ -49,6 +64,30 @@ const ProjectThumbnailPreview = ({ code, projectName }: ProjectThumbnailPreviewP
         const exports = {};
         const { useState, useEffect, useRef, useMemo, useCallback } = React;
         const { createRoot } = ReactDOM;
+        const lucide = window.lucide || {};
+        const LucideIcons = new Proxy({}, {
+          get: function(target, prop) {
+            if (typeof prop !== 'string') return undefined;
+            return function LucideIcon(props) {
+              const ref = React.useRef(null);
+              React.useEffect(() => {
+                if (ref.current && lucide[prop]) {
+                  try {
+                    const result = lucide.createElement(lucide[prop]);
+                    ref.current.innerHTML = '';
+                    ref.current.appendChild(result);
+                  } catch(e) {}
+                }
+              }, []);
+              const size = (props && props.size) || 24;
+              return React.createElement('span', {
+                ref: ref,
+                style: { display: 'inline-flex', width: size, height: size, alignItems: 'center', justifyContent: 'center' },
+                className: (props && props.className) || ''
+              });
+            };
+          }
+        });
 
         ${transpiled}
 
@@ -66,6 +105,7 @@ const ProjectThumbnailPreview = ({ code, projectName }: ProjectThumbnailPreviewP
             <script src="https://cdn.tailwindcss.com"></script>
             <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
             <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+            <script src="https://unpkg.com/lucide@latest"></script>
             <style>
               body {
                 margin: 0;
