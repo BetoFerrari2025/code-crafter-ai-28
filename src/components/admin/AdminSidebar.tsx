@@ -1,8 +1,8 @@
-import { Users, BarChart3, CreditCard, Activity } from "lucide-react";
+import { Users, BarChart3, CreditCard, Activity, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export type AdminView = "users" | "stats" | "credits" | "online";
+export type AdminView = "users" | "stats" | "credits" | "online" | "marketplace";
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -19,6 +19,7 @@ export function AdminSidebar({ currentView, onViewChange, planStats, onlineCount
     { id: "stats" as AdminView, label: t("admin.planStats"), icon: BarChart3 },
     { id: "credits" as AdminView, label: t("admin.credits"), icon: CreditCard },
     { id: "online" as AdminView, label: t("admin.onlineUsers"), icon: Activity },
+    { id: "marketplace" as AdminView, label: t("marketplace.title"), icon: ShoppingBag },
   ];
 
   return (
