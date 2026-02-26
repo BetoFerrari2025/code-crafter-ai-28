@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.manage-subscription]
 verify_jwt = true
+
+[functions.admin-users]
+verify_jwt = true
