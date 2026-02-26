@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PricingDialogProps {
   open: boolean;
@@ -8,77 +9,136 @@ interface PricingDialogProps {
 }
 
 const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
-  const plans = [
-    {
-      name: "Start",
-      description: "Projetado para equipes dinâmicas que constroem juntas em tempo real.",
-      price: "3.99",
-      period: "por mês",
-      subtitle: "compartilhado entre usuários ilimitados",
-      features: [
-        "100 créditos mensais",
-        "5 créditos diários (até 150/mês)",
-        "Nuvem baseada em uso",
-        "Renovações de crédito",
-        "Domínios personalizados",
-        "Remove o emblema adorável",
-        "Projetos privados",
-        "Funções e permissões do usuário"
-      ],
-      buttonVariant: "default" as const,
-      link: "https://buy.stripe.com/test_8x2bJ2fo09xqfxj9wX0VO00"
-    },
-    {
-      name: "Pró",
-      description: "Controles avançados e recursos avançados para departamentos em crescimento",
-      price: "9.90",
-      period: "por mês",
-      subtitle: "compartilhado entre usuários ilimitados",
-      features: [
-        "500 créditos mensais",
-        "SSO",
-        "Projetos Pessoais",
-        "Desativar o treinamento de dados",
-        "Modelos de design"
-      ],
-      buttonVariant: "outline" as const,
-      link: "https://buy.stripe.com/test_6oU5kE6Ru8tm4SFeRh0VO01"
-    },
-    {
-      name: "Premium",
-      description: "Criado para grandes organizações que precisam de flexibilidade, escala e governança.",
-      price: "37.90",
-      period: "Faturamento flexível",
-      subtitle: "Planos personalizados",
-      features: [
-        "Ilimitado",
-        "Suporte dedicado",
-        "Serviços de integração",
-        "Conexões personalizadas",
-        "Controle de acesso baseado em grupo",
-        "Sistemas de design personalizados"
-      ],
-      buttonVariant: "outline" as const,
-      link: "https://buy.stripe.com/test_eVqdRaejW4d670N10r0VO02"
-    },
-  ];
+  const { language, t } = useLanguage();
+
+  const plans = language === "pt"
+    ? [
+        {
+          name: "Start",
+          description: "Projetado para equipes dinâmicas que constroem juntas em tempo real.",
+          price: "10,00",
+          currency: "R$",
+          period: t("pricing.perMonth"),
+          subtitle: t("pricing.shared"),
+          features: [
+            "100 créditos mensais",
+            "5 créditos diários (até 150/mês)",
+            "Nuvem baseada em uso",
+            "Renovações de crédito",
+            "Domínios personalizados",
+            "Remove o emblema adorável",
+            "Projetos privados",
+            "Funções e permissões do usuário",
+          ],
+          buttonVariant: "default" as const,
+          link: "https://buy.stripe.com/test_8x2bJ2fo09xqfxj9wX0VO00",
+        },
+        {
+          name: "Pró",
+          description: "Controles avançados e recursos avançados para departamentos em crescimento",
+          price: "37,00",
+          currency: "R$",
+          period: t("pricing.perMonth"),
+          subtitle: t("pricing.shared"),
+          features: [
+            "500 créditos mensais",
+            "SSO",
+            "Projetos Pessoais",
+            "Desativar o treinamento de dados",
+            "Modelos de design",
+          ],
+          buttonVariant: "outline" as const,
+          link: "https://buy.stripe.com/test_6oU5kE6Ru8tm4SFeRh0VO01",
+        },
+        {
+          name: "Premium",
+          description: "Criado para grandes organizações que precisam de flexibilidade, escala e governança.",
+          price: "97,00",
+          currency: "R$",
+          period: t("pricing.flexBilling"),
+          subtitle: t("pricing.customPlans"),
+          features: [
+            "Ilimitado",
+            "Suporte dedicado",
+            "Serviços de integração",
+            "Conexões personalizadas",
+            "Controle de acesso baseado em grupo",
+            "Sistemas de design personalizados",
+          ],
+          buttonVariant: "outline" as const,
+          link: "https://buy.stripe.com/test_eVqdRaejW4d670N10r0VO02",
+        },
+      ]
+    : [
+        {
+          name: "Start",
+          description: "Designed for dynamic teams building together in real time.",
+          price: "1.99",
+          currency: "$",
+          period: t("pricing.perMonth"),
+          subtitle: t("pricing.shared"),
+          features: [
+            "100 monthly credits",
+            "5 daily credits (up to 150/month)",
+            "Usage-based cloud",
+            "Credit renewals",
+            "Custom domains",
+            "Remove Lovable badge",
+            "Private projects",
+            "User roles & permissions",
+          ],
+          buttonVariant: "default" as const,
+          link: "https://buy.stripe.com/test_8x2bJ2fo09xqfxj9wX0VO00",
+        },
+        {
+          name: "Pro",
+          description: "Advanced controls and features for growing departments",
+          price: "9.90",
+          currency: "$",
+          period: t("pricing.perMonth"),
+          subtitle: t("pricing.shared"),
+          features: [
+            "500 monthly credits",
+            "SSO",
+            "Personal Projects",
+            "Disable data training",
+            "Design templates",
+          ],
+          buttonVariant: "outline" as const,
+          link: "https://buy.stripe.com/test_6oU5kE6Ru8tm4SFeRh0VO01",
+        },
+        {
+          name: "Premium",
+          description: "Built for large organizations that need flexibility, scale, and governance.",
+          price: "19.90",
+          currency: "$",
+          period: t("pricing.flexBilling"),
+          subtitle: t("pricing.customPlans"),
+          features: [
+            "Unlimited",
+            "Dedicated support",
+            "Integration services",
+            "Custom connections",
+            "Group-based access control",
+            "Custom design systems",
+          ],
+          buttonVariant: "outline" as const,
+          link: "https://buy.stripe.com/test_eVqdRaejW4d670N10r0VO02",
+        },
+      ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Planos e Faturamento</DialogTitle>
+          <DialogTitle className="text-2xl">{t("pricing.title")}</DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            No momento, você está no plano: <span className="font-semibold">Gratuito</span>.{" "}
-            <a href="#" className="text-primary hover:underline">
-              Gerencie suas preferências de pagamento e visualize faturas anteriores
-            </a>{" "}
-            ou altere seu plano abaixo.
+            {t("pricing.current")} <span className="font-semibold">{t("pricing.free")}</span>.
           </p>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          {plans.map((plan) => (
+          {plans.map((plan, idx) => (
             <div
               key={plan.name}
               className="border border-border rounded-2xl p-6 bg-card hover:shadow-lg transition-smooth flex flex-col"
@@ -90,37 +150,25 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
                 </p>
 
                 <div className="mb-6">
-                  {plan.price ? (
-                    <>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold">$ {plan.price}</span>
-                        <span className="text-muted-foreground">{plan.period}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">{plan.subtitle}</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-lg font-semibold mb-1">{plan.period}</div>
-                      <p className="text-xs text-muted-foreground">{plan.subtitle}</p>
-                    </>
-                  )}
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold">{plan.currency} {plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{plan.subtitle}</p>
                 </div>
 
                 <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
-                  <Button
-                    variant={plan.buttonVariant}
-                    className="w-full mb-6"
-                  >
-                    Atualizar
+                  <Button variant={plan.buttonVariant} className="w-full mb-6">
+                    {t("pricing.upgrade")}
                   </Button>
                 </a>
 
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground mb-3">
-                    {plan.price ? "Tudo de graça, mais:" : `Tudo em ${plans[plans.indexOf(plan) - 1]?.name}, mais:`}
+                    {idx === 0 ? t("pricing.freePlus") : `${language === "pt" ? "Tudo em" : "Everything in"} ${plans[idx - 1]?.name}, ${language === "pt" ? "mais" : "plus"}:`}
                   </p>
-                  {plan.features.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-2">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       <span className="text-sm">{feature}</span>
                     </div>
@@ -132,10 +180,8 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
         </div>
 
         <div className="mt-8 p-4 bg-muted/50 rounded-lg">
-          <h4 className="font-semibold mb-2">Desconto para estudantes</h4>
-          <p className="text-sm text-muted-foreground">
-            Verifique o status de estudante e tenha acesso a até 50% de desconto no Lovable Pro.
-          </p>
+          <h4 className="font-semibold mb-2">{t("pricing.student")}</h4>
+          <p className="text-sm text-muted-foreground">{t("pricing.studentDesc")}</p>
         </div>
       </DialogContent>
     </Dialog>
