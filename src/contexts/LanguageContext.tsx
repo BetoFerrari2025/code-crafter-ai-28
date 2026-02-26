@@ -52,10 +52,16 @@ const translations: Record<string, Record<Language, string>> = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const detectLanguage = (): Language => {
+  const stored = localStorage.getItem("app-language") as Language;
+  if (stored) return stored;
+  const browserLang = navigator.language || (navigator as any).userLanguage || "";
+  if (browserLang.startsWith("pt")) return "pt";
+  return "en";
+};
+
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<Language>(() => {
-    return (localStorage.getItem("app-language") as Language) || "pt";
-  });
+  const [language, setLanguage] = useState<Language>(detectLanguage);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
