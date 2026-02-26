@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Search, Ban, Trash2, UserCog, Eye, Unlock, Plus } from "lucide-react";
 
 export interface AdminUser {
@@ -37,6 +38,7 @@ export function AdminUserTable({ users, loading, onAction }: AdminUserTableProps
   const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
   const [newPlan, setNewPlan] = useState("free");
   const [creditsAmount, setCreditsAmount] = useState("10");
+  const [confirmAction, setConfirmAction] = useState<{ type: "block" | "delete"; user: AdminUser } | null>(null);
 
   const filtered = users.filter(
     (u) =>
@@ -114,11 +116,11 @@ export function AdminUserTable({ users, loading, onAction }: AdminUserTableProps
                           <Unlock className="h-4 w-4 text-green-600" />
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="icon" onClick={() => onAction("block", user.id)} title="Bloquear">
+                        <Button variant="ghost" size="icon" onClick={() => setConfirmAction({ type: "block", user })} title="Bloquear">
                           <Ban className="h-4 w-4 text-destructive" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => onAction("delete", user.id)} title="Excluir">
+                      <Button variant="ghost" size="icon" onClick={() => setConfirmAction({ type: "delete", user })} title="Excluir">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -213,6 +215,35 @@ export function AdminUserTable({ users, loading, onAction }: AdminUserTableProps
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Confirm Block/Delete Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "delete" ? "Excluir usuário" : "Bloquear usuário"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "delete"
+                ? `Tem certeza que deseja excluir o usuário "${confirmAction?.user.email}"? Esta ação não pode ser desfeita.`
+                : `Tem certeza que deseja bloquear o usuário "${confirmAction?.user.email}"?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmAction) {
+                  onAction(confirmAction.type === "delete" ? "delete" : "block", confirmAction.user.id);
+                  setConfirmAction(null);
+                }
+              }}
+            >
+              {confirmAction?.type === "delete" ? "Excluir" : "Bloquear"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
