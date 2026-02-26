@@ -75,7 +75,7 @@ const Header = () => {
         <div className="flex items-center gap-4 md:gap-8">
           <a href="https://criey.com.br/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-hero" />
-            <span className="font-extrabold text-2xl md:text-4xl text-foreground drop-shadow-md" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <span className="notranslate font-extrabold text-2xl md:text-4xl text-foreground drop-shadow-md" translate="no" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Criey
             </span>
           </a>

@@ -38,7 +38,7 @@ const Index = () => {
           <div className="text-center mb-8 space-y-4 animate-slide-up">
             <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-center">
               {t("hero.title")}{" "}
-              <span className="bg-gradient-hero bg-clip-text text-transparent" style={{ fontFamily: 'inherit' }}>
+              <span className="notranslate bg-gradient-hero bg-clip-text text-transparent" translate="no" style={{ fontFamily: 'inherit' }}>
                 {t("hero.brand")}
               </span>
             </h1>
