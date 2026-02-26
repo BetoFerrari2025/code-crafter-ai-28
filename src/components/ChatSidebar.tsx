@@ -208,13 +208,14 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
         return;
       }
 
-      if (!response.ok) throw new Error('Failed to generate');
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let generatedCode = '';
+      let receivedCode = false;
+      let receivedError = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -231,17 +232,26 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
           const data = line.slice(6);
           if (data === '[DONE]') {
             setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
-            const doneMsg = t("chat.codeGenerated");
-            setMessages((prev) => [...prev, {
-              id: (Date.now() + 2).toString(),
-              role: "assistant",
-              content: doneMsg,
-              timestamp: new Date(),
-            }]);
-            // Save assistant response to DB
-            if (conversationId) saveMessage(conversationId, "assistant", doneMsg);
-            setLastErrorMessage("");
-            toast({ title: t("chat.codeToast"), description: t("chat.codeToastDesc") });
+            if (receivedCode) {
+              const doneMsg = t("chat.codeGenerated");
+              setMessages((prev) => [...prev, {
+                id: (Date.now() + 2).toString(),
+                role: "assistant",
+                content: doneMsg,
+                timestamp: new Date(),
+              }]);
+              if (conversationId) saveMessage(conversationId, "assistant", doneMsg);
+              setLastErrorMessage("");
+              toast({ title: t("chat.codeToast"), description: t("chat.codeToastDesc") });
+            } else if (!receivedError) {
+              setMessages((prev) => [...prev, {
+                id: (Date.now() + 2).toString(),
+                role: "assistant",
+                content: "Não foi possível gerar código. Tente reformular seu pedido.",
+                isError: true,
+                timestamp: new Date(),
+              }]);
+            }
             scrollToBottom();
             continue;
           }
@@ -262,10 +272,22 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
               scrollToBottom();
             } else if (parsed.type === 'code') {
               generatedCode = parsed.code;
+              receivedCode = true;
               if (onCodeGenerated) onCodeGenerated(generatedCode);
+            } else if (parsed.type === 'error') {
+              receivedError = true;
+              setMessages((prev) => prev.filter(m => m.id !== statusMessageId));
+              setMessages((prev) => [...prev, {
+                id: (Date.now() + 3).toString(),
+                role: "assistant",
+                content: parsed.message || "Ocorreu um erro. Tente novamente.",
+                isError: true,
+                timestamp: new Date(),
+              }]);
+              toast({ title: t("chat.error"), description: parsed.message, variant: "destructive" });
             }
           } catch (e) {
-            console.error('Parse error:', e);
+            // Ignore parse errors for partial chunks
           }
         }
       }

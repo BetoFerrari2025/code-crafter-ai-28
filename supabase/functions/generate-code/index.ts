@@ -9,7 +9,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req: Request) => {
@@ -139,7 +139,9 @@ DESIGN PROFISSIONAL OBRIGATÓRIO
 🖼️ Imagens: APENAS URLs HTTPS do Unsplash com ?w=800
 
 Se há código anterior: EDITE mantendo todo código existente
-Se é novo: Crie do zero seguindo as regras de design`;
+Se é novo: Crie do zero seguindo as regras de design
+
+SEMPRE retorne o código completo e funcional do componente React.`;
 
     // Format messages for multimodal support
     const formattedMessages = messages.map((msg: any) => {
@@ -192,7 +194,33 @@ Se é novo: Crie do zero seguindo as regras de design`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error("❌ AI API error:", response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      
+      // Return error as SSE stream so client can handle it properly
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'credits',
+            credits_used: creditResult.credits_used,
+            max_credits: creditResult.max_credits,
+            remaining: creditResult.remaining,
+          })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'error',
+            message: 'Erro temporário na IA. Tente novamente em alguns segundos.',
+          })}\n\n`));
+          controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+          controller.close();
+        }
+      });
+      
+      return new Response(errorStream, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+      });
     }
 
     // Stream SSE response with credit info in first chunk
@@ -228,15 +256,17 @@ Se é novo: Crie do zero seguindo as regras de design`;
 
               const data = line.slice(6);
               if (data === '[DONE]') {
+                // Clean and send the final code
                 let cleanCode = generatedCode
                   .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
                   .replace(/```\n?/g, '')
-                  .replace(/,\s*n\s+/g, ',\n    ')
-                  .replace(/\\n/g, '\n')
-                  .replace(/\\"/g, '"')
                   .trim();
 
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
+                if (cleanCode.length > 0) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
+                } else {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'A IA não retornou código válido. Tente reformular seu pedido.' })}\n\n`));
+                }
                 controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
                 controller.close();
                 return;
@@ -249,19 +279,39 @@ Se é novo: Crie do zero seguindo as regras de design`;
                   generatedCode += delta;
                   let status = 'Pensando...';
                   if (generatedCode.includes('import')) status = '📦 Importando bibliotecas...';
-                  else if (generatedCode.includes('const') || generatedCode.includes('function')) status = '🔧 Criando componentes...';
-                  else if (generatedCode.includes('className')) status = '🎨 Estilizando interface...';
-                  else if (generatedCode.includes('return')) status = '✨ Finalizando estrutura...';
+                  if (generatedCode.includes('const') || generatedCode.includes('function')) status = '🔧 Criando componentes...';
+                  if (generatedCode.includes('className')) status = '🎨 Estilizando interface...';
+                  if (generatedCode.includes('return')) status = '✨ Finalizando estrutura...';
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', status })}\n\n`));
                 }
               } catch (e) {
-                console.error('Parse error:', e);
+                // Ignore parse errors for individual chunks
               }
             }
           }
+
+          // If we got here without [DONE], flush whatever we have
+          if (generatedCode.length > 0) {
+            let cleanCode = generatedCode
+              .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
+              .replace(/```\n?/g, '')
+              .trim();
+            
+            if (cleanCode.length > 0) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
+            }
+          }
+          controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+          controller.close();
         } catch (error) {
           console.error('Stream error:', error);
-          controller.error(error);
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'Erro durante a geração. Tente novamente.' })}\n\n`));
+            controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+            controller.close();
+          } catch {
+            // Controller may already be closed
+          }
         }
       }
     });
@@ -276,14 +326,25 @@ Se é novo: Crie do zero seguindo as regras de design`;
     });
   } catch (error) {
     console.error("💥 Erro no generate-code:", error);
-    return new Response(
-      JSON.stringify({
-        type: "chat",
-        role: "assistant",
-        message: "😔 Houve um erro ao gerar o preview. Tente novamente!",
-        code: null
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Return error as SSE stream for consistency
+    const encoder = new TextEncoder();
+    const errorStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Erro interno. Tente novamente.',
+        })}\n\n`));
+        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+        controller.close();
+      }
+    });
+    
+    return new Response(errorStream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      },
+    });
   }
 });
