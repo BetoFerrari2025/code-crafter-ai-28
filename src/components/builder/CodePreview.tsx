@@ -36,11 +36,19 @@ import { useCodeHistory } from "@/hooks/useCodeHistory";
 type ViewMode = "desktop" | "tablet" | "mobile";
 type DisplayMode = "code" | "preview";
 
+interface PreviewErrorTelemetry {
+  error: string;
+  stack?: string;
+  phase: 'compilation' | 'runtime' | 'render';
+  codeSnippet?: string;
+  timestamp: number;
+}
+
 interface CodePreviewProps {
   generatedCode?: string;
   isGenerating?: boolean;
   onCodeChange?: (code: string) => void;
-  onRequestFix?: (error: string) => void;
+  onRequestFix?: (error: string, telemetry?: PreviewErrorTelemetry) => void;
 }
 
 const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }: CodePreviewProps) => {
@@ -56,6 +64,8 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const [showHistory, setShowHistory] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [previewLoadError, setPreviewLoadError] = useState<string | null>(null);
+  const [lastWorkingCode, setLastWorkingCode] = useState<string | null>(null);
+  const [errorTelemetry, setErrorTelemetry] = useState<PreviewErrorTelemetry | null>(null);
   const [showGithubDialog, setShowGithubDialog] = useState(false);
   const [showSupabaseDialog, setShowSupabaseDialog] = useState(false);
   const [githubRepo, setGithubRepo] = useState("");
@@ -75,6 +85,21 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     setPreviewHtml(result.html);
     setCompilationError(result.error);
     setPreviewLoadError(result.html ? null : "Falha ao gerar o preview.");
+    
+    if (result.error) {
+      const telemetry: PreviewErrorTelemetry = {
+        error: result.error,
+        phase: 'compilation',
+        codeSnippet: code.slice(0, 500),
+        timestamp: Date.now(),
+      };
+      setErrorTelemetry(telemetry);
+    } else {
+      // Código compilou sem erro → salvar como última versão funcional
+      setLastWorkingCode(code);
+      setErrorTelemetry(null);
+    }
+    
     return result;
   }, [compile]);
 
@@ -84,6 +109,25 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     setRefreshKey((k) => k + 1);
     toast({ title: "Preview recarregado", description: "Nova tentativa de renderização executada." });
   }, [displayCode, updatePreviewFromCode, toast]);
+
+  // Captura erros de runtime do iframe via postMessage
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'PREVIEW_RUNTIME_ERROR') {
+        const telemetry: PreviewErrorTelemetry = {
+          error: event.data.error,
+          stack: event.data.stack,
+          phase: 'runtime',
+          codeSnippet: displayCode?.slice(0, 500),
+          timestamp: event.data.timestamp || Date.now(),
+        };
+        setErrorTelemetry(telemetry);
+        setCompilationError(event.data.error);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [displayCode]);
 
   // Processa novo código gerado
   useEffect(() => {
@@ -136,9 +180,19 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
 
   const handleTryFix = useCallback(() => {
     if (compilationError && onRequestFix) {
-      onRequestFix(compilationError);
+      onRequestFix(compilationError, errorTelemetry || undefined);
     }
-  }, [compilationError, onRequestFix]);
+  }, [compilationError, onRequestFix, errorTelemetry]);
+
+  const handleRestoreLastWorking = useCallback(() => {
+    if (!lastWorkingCode) return;
+    setDisplayCode(lastWorkingCode);
+    setEditedCode(lastWorkingCode);
+    addVersion(lastWorkingCode, 'Restaurado (última versão funcional)');
+    updatePreviewFromCode(lastWorkingCode);
+    if (onCodeChange) onCodeChange(lastWorkingCode);
+    toast({ title: "Restaurado!", description: "Última versão funcional restaurada com sucesso." });
+  }, [lastWorkingCode, addVersion, updatePreviewFromCode, onCodeChange, toast]);
 
   const getPreviewWidth = () => {
     switch (viewMode) {
@@ -401,16 +455,31 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
 
                       <div className="flex items-center gap-2">
                         {/* Try to fix button - appears on compilation error */}
-                        {compilationError && onRequestFix && displayMode === "preview" && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={handleTryFix}
-                            className="h-7 text-xs gap-1 animate-fade-in"
-                          >
-                            <Wrench className="h-3 w-3" />
-                            Tentar corrigir
-                          </Button>
+                        {compilationError && displayMode === "preview" && (
+                          <div className="flex items-center gap-1">
+                            {lastWorkingCode && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleRestoreLastWorking}
+                                className="h-7 text-xs gap-1 animate-fade-in"
+                              >
+                                <Undo2 className="h-3 w-3" />
+                                Restaurar
+                              </Button>
+                            )}
+                            {onRequestFix && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={handleTryFix}
+                                className="h-7 text-xs gap-1 animate-fade-in"
+                              >
+                                <Wrench className="h-3 w-3" />
+                                Tentar corrigir
+                              </Button>
+                            )}
+                          </div>
                         )}
 
                         {displayMode === "code" && (

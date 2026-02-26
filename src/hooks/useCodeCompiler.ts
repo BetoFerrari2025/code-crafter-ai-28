@@ -111,6 +111,16 @@ export const useCodeCompiler = () => {
           const handleRuntimeError = (error) => {
             console.error('Erro no preview:', error);
             renderError('Erro de Runtime', error);
+            // Envia telemetria para o parent
+            try {
+              window.parent.postMessage({
+                type: 'PREVIEW_RUNTIME_ERROR',
+                error: (error && (error.message || String(error))) || 'Erro desconhecido',
+                stack: error && error.stack ? error.stack : '',
+                phase: 'runtime',
+                timestamp: Date.now(),
+              }, '*');
+            } catch(e) {}
           };
 
           window.addEventListener('error', (event) => {
