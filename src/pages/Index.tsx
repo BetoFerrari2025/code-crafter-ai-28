@@ -4,16 +4,18 @@ import Header from "@/components/Header";
 import ProjectsWorkspace from "@/components/ProjectsWorkspace";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Sparkles, Globe, Database } from "lucide-react";
+import { ArrowRight, Sparkles, Globe, Database, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeAnimation } from "react-type-animation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 const Index = () => {
   const [prompt, setPrompt] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { isInstallable, isInstalled, install } = usePWAInstall();
 
   const handleStart = () => {
     if (!prompt.trim()) {
@@ -60,21 +62,31 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="mt-8 text-center animate-fade-in md:hidden">
-            <Button
-              onClick={() => {
-                toast({
-                  title: t("hero.downloadToast"),
-                  description: t("hero.downloadDesc"),
-                });
-              }}
-              variant="outline"
-              size="lg"
-              className="rounded-full"
-            >
-              {t("hero.downloadApp")}
-            </Button>
-          </div>
+          {!isInstalled && (
+            <div className="mt-8 text-center animate-fade-in md:hidden">
+              <Button
+                onClick={async () => {
+                  if (isInstallable) {
+                    const accepted = await install();
+                    if (accepted) {
+                      toast({ title: "App instalado!", description: "O Criey foi adicionado à sua tela inicial." });
+                    }
+                  } else {
+                    toast({
+                      title: t("hero.downloadToast"),
+                      description: t("hero.downloadDesc"),
+                    });
+                  }
+                }}
+                variant="outline"
+                size="lg"
+                className="rounded-full"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {t("hero.downloadApp")}
+              </Button>
+            </div>
+          )}
 
           <div className="mt-8 md:mt-12 animate-slide-up mx-0" style={{ animationDelay: "0.2s" }}>
             <div className="bg-background/80 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-medium border border-border p-2 md:p-2 w-full">
