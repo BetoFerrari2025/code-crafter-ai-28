@@ -5,6 +5,7 @@ import { Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { z } from "zod"
 import { toast } from "@/hooks/use-toast"
 import { useLanguage } from "@/contexts/LanguageContext"
+import TrackingScripts from "@/components/TrackingScripts"
 
 type AuthMode = "login" | "signup" | "forgot-password";
 
@@ -132,6 +133,7 @@ export default function AuthPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4 relative">
+      <TrackingScripts />
       {/* WhatsApp Floating Button */}
       <a
         href="https://wa.me/5515997109182"

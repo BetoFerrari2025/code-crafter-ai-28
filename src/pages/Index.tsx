@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TypeAnimation } from "react-type-animation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import TrackingScripts from "@/components/TrackingScripts";
 
 const Index = () => {
   const [prompt, setPrompt] = useState("");
@@ -31,6 +32,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <TrackingScripts />
       <Header />
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 opacity-50" />
       <div className="absolute inset-0 backdrop-blur-3xl" />

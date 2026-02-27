@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import TrackingScripts from "@/components/TrackingScripts";
 
 interface PricingDialogProps {
   open: boolean;
@@ -130,6 +131,7 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <TrackingScripts />
         <DialogHeader>
           <DialogTitle className="text-2xl">{t("pricing.title")}</DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
