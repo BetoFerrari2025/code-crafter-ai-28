@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Editor = () => {
@@ -17,7 +17,7 @@ const Editor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [isPublishing, setIsPublishing] = useState(false);
-  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const [chatOpen, setChatOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
@@ -163,12 +163,12 @@ const Editor = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="flex flex-col bg-background" style={{ height: '100dvh' }}>
       <Header />
-      <div className="flex-1 flex flex-col pt-16 overflow-hidden">
+      <div className="flex-1 flex flex-col pt-16 overflow-hidden min-h-0">
         {isMobile ? (
           <>
-            <div className="flex-1 overflow-hidden relative">
+            <div className="flex-1 overflow-hidden relative min-h-0">
               {mobileView === "chat" ? (
                 <div className="h-full">
                   <ChatSidebar
@@ -187,42 +187,59 @@ const Editor = () => {
               )}
             </div>
 
-            <div className="border-t border-border bg-background/95 backdrop-blur px-2 py-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+            <div className="shrink-0 border-t border-border bg-background px-3 py-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant={mobileView === "chat" ? "default" : "outline"}
                   onClick={() => setMobileView("chat")}
-                  className="h-10 text-xs"
+                  className="h-11 text-xs font-medium"
                 >
+                  <MessageSquare className="h-4 w-4 mr-1" />
                   Chat
                 </Button>
                 <Button
                   variant={mobileView === "preview" ? "default" : "outline"}
                   onClick={() => setMobileView("preview")}
-                  className="h-10 text-xs"
+                  className="h-11 text-xs font-medium"
                 >
+                  <Eye className="h-4 w-4 mr-1" />
                   Preview
                 </Button>
-                <Button onClick={handleMobilePublish} disabled={isPublishing || !generatedCode} className="h-10 text-xs">
-                  {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                  <span>Publicar</span>
+                <Button
+                  onClick={handleMobilePublish}
+                  disabled={isPublishing || !generatedCode}
+                  className="h-11 text-xs font-medium"
+                >
+                  {isPublishing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ExternalLink className="h-4 w-4 mr-1" />}
+                  Publicar
                 </Button>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex overflow-hidden">
-            <div className="flex">
-              <ChatSidebar
-                onCodeGenerated={setGeneratedCode}
-                currentCode={generatedCode}
-                fixRequest={fixRequest}
-                onFixRequestHandled={() => setFixRequest("")}
-                initialPrompt={initialPrompt}
-                onInitialPromptHandled={() => setInitialPrompt("")}
-              />
-            </div>
-            <div className="flex-1">
+          <div className="flex-1 flex overflow-hidden relative">
+            {chatOpen && (
+              <div className="flex">
+                <ChatSidebar
+                  onCodeGenerated={setGeneratedCode}
+                  currentCode={generatedCode}
+                  fixRequest={fixRequest}
+                  onFixRequestHandled={() => setFixRequest("")}
+                  initialPrompt={initialPrompt}
+                  onInitialPromptHandled={() => setInitialPrompt("")}
+                />
+              </div>
+            )}
+            <div className="flex-1 relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setChatOpen(prev => !prev)}
+                className="absolute top-2 left-2 z-10 h-8 w-8"
+                title={chatOpen ? "Fechar chat" : "Abrir chat"}
+              >
+                {chatOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              </Button>
               <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
             </div>
           </div>
