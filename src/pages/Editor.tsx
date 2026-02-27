@@ -7,9 +7,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ArrowLeftRight, ExternalLink, Loader2, Moon, Sun } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/components/ThemeProvider";
 
 const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -22,27 +21,11 @@ const Editor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
 
-  const scrollToMobileView = useCallback((view: "chat" | "preview") => {
-    const container = mobileScrollRef.current;
-    if (!container) return;
-
-    const targetLeft = view === "preview" ? container.clientWidth : 0;
-    container.scrollTo({ left: targetLeft, behavior: "smooth" });
-    setMobileView(view);
+  const toggleMobileView = useCallback(() => {
+    setMobileView(prev => prev === "chat" ? "preview" : "chat");
   }, []);
-
-  const handleMobilePanelScroll = useCallback(() => {
-    const container = mobileScrollRef.current;
-    if (!container) return;
-
-    const nextView = container.scrollLeft > container.clientWidth / 2 ? "preview" : "chat";
-    if (nextView !== mobileView) {
-      setMobileView(nextView);
-    }
-  }, [mobileView]);
 
   const handleMobilePublish = async () => {
     if (!generatedCode) {
@@ -164,9 +147,9 @@ const Editor = () => {
 
   useEffect(() => {
     if (isMobile && generatedCode) {
-      scrollToMobileView("preview");
+      setMobileView("preview");
     }
-  }, [generatedCode, isMobile, scrollToMobileView]);
+  }, [generatedCode, isMobile]);
 
   if (isLoading) {
     return (
@@ -185,34 +168,9 @@ const Editor = () => {
       <div className="flex-1 flex flex-col pt-16 overflow-hidden">
         {isMobile ? (
           <>
-            <div className="border-b border-border bg-background px-3 py-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                <div className="flex items-center gap-1.5">
-                  <ArrowLeftRight className="h-3.5 w-3.5" />
-                  <span>Arraste para o lado</span>
-                </div>
-                <span className="font-medium text-foreground">{mobileView === "chat" ? "Chat" : "Preview"}</span>
-              </div>
-
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={1}
-                value={mobileView === "chat" ? 0 : 1}
-                onChange={(e) => scrollToMobileView(e.target.value === "0" ? "chat" : "preview")}
-                className="w-full accent-primary"
-                aria-label="Alternar entre chat e preview"
-              />
-            </div>
-
-            <div
-              ref={mobileScrollRef}
-              onScroll={handleMobilePanelScroll}
-              className="flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth"
-            >
-              <div className="flex h-full w-[200%] min-w-[200%]">
-                <div className="w-full min-w-full h-full snap-start border-r border-border overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
+              {mobileView === "chat" ? (
+                <div className="h-full">
                   <ChatSidebar
                     onCodeGenerated={setGeneratedCode}
                     currentCode={generatedCode}
@@ -222,23 +180,32 @@ const Editor = () => {
                     onInitialPromptHandled={() => setInitialPrompt("")}
                   />
                 </div>
-
-                <div className="w-full min-w-full h-full snap-start overflow-hidden">
+              ) : (
+                <div className="h-full">
                   <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="border-t border-border bg-background/95 backdrop-blur px-2 py-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
-              <div className="grid grid-cols-2 gap-2">
-                <Button onClick={handleMobilePublish} disabled={isPublishing || !generatedCode} className="h-10">
-                  {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                  <span>{isPublishing ? "Publicando..." : "Publicar"}</span>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant={mobileView === "chat" ? "default" : "outline"}
+                  onClick={() => setMobileView("chat")}
+                  className="h-10 text-xs"
+                >
+                  Chat
                 </Button>
-
-                <Button variant="outline" onClick={toggleTheme} className="h-10">
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                  <span>{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>
+                <Button
+                  variant={mobileView === "preview" ? "default" : "outline"}
+                  onClick={() => setMobileView("preview")}
+                  className="h-10 text-xs"
+                >
+                  Preview
+                </Button>
+                <Button onClick={handleMobilePublish} disabled={isPublishing || !generatedCode} className="h-10 text-xs">
+                  {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                  <span>Publicar</span>
                 </Button>
               </div>
             </div>
