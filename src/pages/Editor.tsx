@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ExternalLink, Loader2, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ExternalLink, Loader2, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Editor = () => {
@@ -15,6 +15,7 @@ const Editor = () => {
   const [initialPrompt, setInitialPrompt] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
+  const [mobileChatOpen, setMobileChatOpen] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const navigate = useNavigate();
@@ -165,13 +166,35 @@ const Editor = () => {
     <div className="fixed inset-0 flex flex-col bg-background">
       <Header />
 
-      {/* MOBILE LAYOUT (< md) */}
-      <div
-        className="flex flex-col flex-1 min-h-0 pt-16 md:hidden"
-        style={{ paddingBottom: 'calc(60px + env(safe-area-inset-bottom, 0px))' }}
-      >
-        {mobileView === "chat" ? (
-          <div className="flex-1 min-h-0 overflow-hidden">
+      {/* MOBILE LAYOUT (< md) - Chat on top, Preview below */}
+      <div className="flex flex-col flex-1 min-h-0 pt-16 md:hidden">
+        {/* Toggle chat button */}
+        <div className="flex items-center gap-2 px-2 py-1 border-b border-border bg-muted/50 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileChatOpen(prev => !prev)}
+            className="h-8 text-xs gap-1"
+          >
+            {mobileChatOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <MessageSquare className="h-4 w-4" />
+            {mobileChatOpen ? "Fechar Chat" : "Abrir Chat"}
+          </Button>
+          <div className="flex-1" />
+          <Button
+            size="sm"
+            onClick={handleMobilePublish}
+            disabled={isPublishing || !generatedCode}
+            className="h-8 text-xs gap-1"
+          >
+            {isPublishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
+            Publicar
+          </Button>
+        </div>
+
+        {/* Chat panel - collapsible */}
+        {mobileChatOpen && (
+          <div className="h-[45%] min-h-0 overflow-hidden border-b border-border shrink-0">
             <ChatSidebar
               onCodeGenerated={setGeneratedCode}
               currentCode={generatedCode}
@@ -181,43 +204,11 @@ const Editor = () => {
               onInitialPromptHandled={() => setInitialPrompt("")}
             />
           </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
-          </div>
         )}
 
-        {/* Fixed mobile footer */}
-        <div
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background px-3 py-2 md:hidden"
-          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.5rem)' }}
-        >
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant={mobileView === "chat" ? "default" : "outline"}
-              onClick={() => setMobileView("chat")}
-              className="h-11 text-xs font-medium"
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Chat
-            </Button>
-            <Button
-              variant={mobileView === "preview" ? "default" : "outline"}
-              onClick={() => setMobileView("preview")}
-              className="h-11 text-xs font-medium"
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              Preview
-            </Button>
-            <Button
-              onClick={handleMobilePublish}
-              disabled={isPublishing || !generatedCode}
-              className="h-11 text-xs font-medium"
-            >
-              {isPublishing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ExternalLink className="h-4 w-4 mr-1" />}
-              Publicar
-            </Button>
-          </div>
+        {/* Preview panel - always visible */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
         </div>
       </div>
 
