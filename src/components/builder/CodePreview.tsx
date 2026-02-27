@@ -324,7 +324,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     <div className="flex-1 h-full bg-background flex flex-row">
       <div className="flex-1 flex flex-col">
         {/* Topbar */}
-        <div className="h-16 border-b border-border bg-background flex items-center justify-between px-4 gap-2">
+        <div className="h-14 md:h-16 border-b border-border bg-background flex items-center justify-between px-2 md:px-4 gap-1 md:gap-2 overflow-x-auto">
           <div className="flex items-center gap-2">
             {/* Display mode toggle */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
@@ -416,8 +416,8 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
             </Button>
           </div>
 
-          {/* Device mode */}
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+          {/* Device mode - hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1 bg-muted/50 rounded-lg p-1">
             <Button variant={viewMode === "desktop" ? "default" : "ghost"} size="icon" onClick={() => setViewMode("desktop")} className="h-8 w-8">
               <Monitor className="h-4 w-4" />
             </Button>

@@ -370,7 +370,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   };
 
   return (
-    <div className="w-[400px] h-full bg-sidebar border-r border-sidebar-border flex flex-col relative">
+    <div className="w-full md:w-[400px] h-full bg-sidebar border-r border-sidebar-border flex flex-col relative">
       {/* Conversation History Overlay */}
       <ConversationHistory
         open={showHistory}
