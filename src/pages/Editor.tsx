@@ -167,9 +167,9 @@ const Editor = () => {
       <Header />
 
       {/* MOBILE LAYOUT (< md) - Chat on top, Preview below */}
-      <div className="flex flex-col flex-1 min-h-0 pt-16 md:hidden">
-        {/* Toggle chat button */}
-        <div className="flex items-center gap-2 px-2 py-1 border-b border-border bg-muted/50 shrink-0">
+      <div className="flex flex-col md:hidden" style={{ height: 'calc(100dvh - 64px)', marginTop: '64px' }}>
+        {/* Mobile action bar */}
+        <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border bg-muted/50" style={{ flexShrink: 0 }}>
           <Button
             variant="ghost"
             size="sm"
@@ -194,7 +194,7 @@ const Editor = () => {
 
         {/* Chat panel - collapsible */}
         {mobileChatOpen && (
-          <div className="h-[45%] min-h-0 overflow-hidden border-b border-border shrink-0">
+          <div style={{ height: '40%', flexShrink: 0, overflow: 'hidden' }} className="border-b border-border">
             <ChatSidebar
               onCodeGenerated={setGeneratedCode}
               currentCode={generatedCode}
@@ -206,8 +206,8 @@ const Editor = () => {
           </div>
         )}
 
-        {/* Preview panel - always visible */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        {/* Preview panel - takes remaining space */}
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
         </div>
       </div>
