@@ -95,11 +95,11 @@ export default function AuthPage() {
         if (data.session) {
           setMessage(t("auth.accountCreated"))
           toast({ title: t("auth.accountDone"), description: t("auth.redirecting") });
-          setTimeout(() => navigate(redirectTo === "/" ? "/dashboard" : redirectTo), 100)
+          setTimeout(() => navigate(redirectTo), 100)
         } else {
           // Auto-confirm enabled, but just in case session isn't immediately available
           toast({ title: t("auth.accountDone"), description: t("auth.redirecting") });
-          setTimeout(() => navigate(redirectTo === "/" ? "/dashboard" : redirectTo), 100)
+          setTimeout(() => navigate(redirectTo), 100)
         }
       }
     } catch (err: any) {
