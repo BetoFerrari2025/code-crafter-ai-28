@@ -237,13 +237,13 @@ const Editor = () => {
         )}
         <div className="flex-1 relative">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setChatOpen(prev => !prev)}
-            className="absolute top-2 left-2 z-10 h-8 w-8"
+            className="absolute top-3 left-3 z-10 h-9 w-9 rounded-lg shadow-md border-border bg-background/90 backdrop-blur-sm hover:bg-muted transition-all"
             title={chatOpen ? "Fechar chat" : "Abrir chat"}
           >
-            {chatOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+            {chatOpen ? <PanelLeftClose className="h-5 w-5 text-foreground" /> : <PanelLeftOpen className="h-5 w-5 text-foreground" />}
           </Button>
           <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
         </div>
