@@ -30,9 +30,7 @@ interface ManageSubscriptionDialogProps {
 }
 
 const PLANS = [
-  { name: "Start", price: "$9.99/mo", features: ["Feature 1", "Feature 2"] },
-  { name: "Pró", price: "$19.99/mo", features: ["All Start features", "Feature 3", "Feature 4"] },
-  { name: "Premium", price: "$29.99/mo", features: ["All Pró features", "Feature 5", "Priority support"] },
+  { name: "Premium", price: "$1.99/mo", features: ["Créditos ilimitados", "Projetos ilimitados", "Nuvem baseada em uso", "Domínios personalizados", "Suporte dedicado"] },
 ];
 
 export default function ManageSubscriptionDialog({
