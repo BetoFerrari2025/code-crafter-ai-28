@@ -24,6 +24,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import VersionHistoryPanel from "./VersionHistoryPanel";
+import AutoFixIndicator from "./AutoFixIndicator";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -544,16 +545,12 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                         {/* Try to fix button - appears on compilation error */}
                         {compilationError && displayMode === "preview" && (
                           <div className="flex items-center gap-1">
-                            {autoFixAttempts > 0 && autoFixAttempts < MAX_AUTO_FIX_ATTEMPTS && (
-                              <Badge variant="outline" className="text-xs animate-pulse border-primary/30 text-primary">
-                                🔧 Auto-corrigindo ({autoFixAttempts}/{MAX_AUTO_FIX_ATTEMPTS})
-                              </Badge>
-                            )}
-                            {autoFixAttempts >= MAX_AUTO_FIX_ATTEMPTS && (
-                              <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
-                                Auto-correção esgotada
-                              </Badge>
-                            )}
+                            <AutoFixIndicator
+                              attempt={autoFixAttempts}
+                              maxAttempts={MAX_AUTO_FIX_ATTEMPTS}
+                              isActive={autoFixAttempts > 0 && autoFixAttempts < MAX_AUTO_FIX_ATTEMPTS}
+                              isExhausted={autoFixAttempts >= MAX_AUTO_FIX_ATTEMPTS}
+                            />
                             {lastWorkingCode && (
                               <Button
                                 size="sm"
