@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { SendHorizonal, Sparkles } from "lucide-react";
+import { SendHorizonal, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CodePreview from "@/components/builder/CodePreview";
@@ -29,6 +30,38 @@ const MainBuilder = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [creditsExhausted, setCreditsExhausted] = useState(false);
   const [creditsMessage, setCreditsMessage] = useState("");
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(5);
+  const [maxCredits, setMaxCredits] = useState<number>(5);
+  const [monthlyRemaining, setMonthlyRemaining] = useState<number>(30);
+  const [monthlyMax, setMonthlyMax] = useState<number>(30);
+
+  // Fetch credits from DB
+  const fetchCredits = async (uid: string) => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("user_daily_credits")
+        .select("credits_used, max_credits")
+        .eq("user_id", uid)
+        .eq("usage_date", today)
+        .maybeSingle();
+      if (data) {
+        setCreditsRemaining(data.max_credits - data.credits_used);
+        setMaxCredits(data.max_credits);
+      }
+      const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+      const { data: md } = await supabase
+        .from("user_monthly_credits")
+        .select("credits_used, max_credits")
+        .eq("user_id", uid)
+        .eq("usage_month", currentMonth)
+        .maybeSingle();
+      if (md) {
+        setMonthlyRemaining(md.max_credits - md.credits_used);
+        setMonthlyMax(md.max_credits);
+      }
+    } catch {}
+  };
 
   // Authentication check
   useEffect(() => {
@@ -43,6 +76,7 @@ const MainBuilder = () => {
         navigate("/auth");
         return;
       }
+      fetchCredits(session.user.id);
       setIsLoading(false);
     };
 
@@ -109,6 +143,12 @@ const MainBuilder = () => {
           } else if (parsed.type === 'error') {
             errorMessage = parsed.message;
           } else if (parsed.type === 'credits') {
+            setCreditsRemaining(parsed.remaining ?? 0);
+            setMaxCredits(parsed.max_credits ?? 5);
+            if (parsed.monthly_remaining !== undefined) {
+              setMonthlyRemaining(parsed.monthly_remaining);
+              setMonthlyMax(parsed.monthly_max ?? 30);
+            }
             window.dispatchEvent(new CustomEvent('credits-updated', {
               detail: {
                 credits_used: parsed.credits_used,
@@ -224,9 +264,27 @@ const MainBuilder = () => {
     <div className="flex h-screen">
       {/* Chat */}
       <div className="w-[380px] border-r border-border flex flex-col bg-background">
-        <div className="p-4 border-b border-border flex items-center gap-2">
-          <Sparkles className="text-primary" />
-          <h2 className="font-semibold text-lg">Construtor de Apps IA</h2>
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="text-primary" />
+              <h2 className="font-semibold text-lg">Construtor de Apps IA</h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+            <div className="flex-1">
+              <Progress value={maxCredits > 0 ? (creditsRemaining / maxCredits) * 100 : 0} className="h-1.5" />
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {creditsRemaining}/{maxCredits} hoje
+            </span>
+            {monthlyMax < 999999 && (
+              <span className="text-xs text-muted-foreground whitespace-nowrap border-l border-border pl-2">
+                {monthlyRemaining}/{monthlyMax} mês
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-4 space-y-4">
