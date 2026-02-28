@@ -6,8 +6,9 @@ import Header from "@/components/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ExternalLink, Loader2, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen, ChevronUp, ChevronDown } from "lucide-react";
+import { ExternalLink, Loader2, MessageSquare, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -166,47 +167,46 @@ const Editor = () => {
     <div className="fixed inset-0 flex flex-col bg-background">
       <Header />
 
-      {/* MOBILE LAYOUT (< md) - Chat on top, Preview below */}
+      {/* MOBILE LAYOUT (< md) */}
       <div className="flex flex-col md:hidden" style={{ height: 'calc(100dvh - 64px)', marginTop: '64px' }}>
-        {/* Mobile action bar */}
-        <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border bg-muted/50" style={{ flexShrink: 0 }}>
+        {/* Mobile floating buttons */}
+        <div className="absolute top-[68px] left-2 z-30 flex flex-col gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="outline"
+            size="icon"
             onClick={() => setMobileChatOpen(prev => !prev)}
-            className="h-8 text-xs gap-1"
+            className="h-10 w-10 rounded-full shadow-lg border-border bg-background/95 backdrop-blur-sm"
           >
-            {mobileChatOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            <MessageSquare className="h-4 w-4" />
-            {mobileChatOpen ? "Fechar Chat" : "Abrir Chat"}
+            <MessageSquare className="h-5 w-5 text-foreground" />
           </Button>
-          <div className="flex-1" />
           <Button
-            size="sm"
+            size="icon"
             onClick={handleMobilePublish}
             disabled={isPublishing || !generatedCode}
-            className="h-8 text-xs gap-1"
+            className="h-10 w-10 rounded-full shadow-lg"
           >
-            {isPublishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
-            Publicar
+            {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
           </Button>
         </div>
 
-        {/* Chat panel - collapsible */}
-        {mobileChatOpen && (
-          <div style={{ height: '40%', flexShrink: 0, overflow: 'hidden' }} className="border-b border-border">
-            <ChatSidebar
-              onCodeGenerated={setGeneratedCode}
-              currentCode={generatedCode}
-              fixRequest={fixRequest}
-              onFixRequestHandled={() => setFixRequest("")}
-              initialPrompt={initialPrompt}
-              onInitialPromptHandled={() => setInitialPrompt("")}
-            />
-          </div>
-        )}
+        {/* Chat as Sheet overlay */}
+        <Sheet open={mobileChatOpen} onOpenChange={setMobileChatOpen}>
+          <SheetContent side="left" className="w-[85vw] max-w-[400px] p-0">
+            <SheetTitle className="sr-only">Chat</SheetTitle>
+            <div className="h-full">
+              <ChatSidebar
+                onCodeGenerated={(code) => { setGeneratedCode(code); setMobileChatOpen(false); }}
+                currentCode={generatedCode}
+                fixRequest={fixRequest}
+                onFixRequestHandled={() => setFixRequest("")}
+                initialPrompt={initialPrompt}
+                onInitialPromptHandled={() => setInitialPrompt("")}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
 
-        {/* Preview panel - takes remaining space */}
+        {/* Preview - full screen */}
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
         </div>
