@@ -136,7 +136,7 @@ const Header = () => {
       <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4 md:gap-8">
           <a href="https://criey.com.br/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-hero" />
+            <img src="/images/logo-criey.png" alt="Criey" className="w-6 h-6 md:w-8 md:h-8 rounded-lg" />
             <span className="notranslate font-extrabold text-2xl md:text-4xl text-foreground drop-shadow-md" translate="no" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Criey
             </span>
