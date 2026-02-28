@@ -26,6 +26,7 @@ const MainBuilder = () => {
   ]);
   const [input, setInput] = useState("");
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [currentCode, setCurrentCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [creditsExhausted, setCreditsExhausted] = useState(false);
@@ -91,9 +92,15 @@ const MainBuilder = () => {
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
-  const callGenerateCode = useCallback(async (messagesToSend: Message[]): Promise<{ code?: string; message?: string; creditsExhausted?: boolean }> => {
+  const callGenerateCode = useCallback(async (messagesToSend: Message[], existingCode?: string | null): Promise<{ code?: string; message?: string; creditsExhausted?: boolean }> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Não autenticado");
+
+    // If there's existing code, attach it to the payload so the AI can modify it
+    const payload: any = { messages: messagesToSend };
+    if (existingCode) {
+      payload.currentCode = existingCode;
+    }
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
@@ -103,7 +110,7 @@ const MainBuilder = () => {
         'Authorization': `Bearer ${session.access_token}`,
         'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ messages: messagesToSend }),
+      body: JSON.stringify(payload),
     });
 
     // Handle 429 credits exhausted (returns JSON, not SSE)
@@ -185,7 +192,7 @@ const MainBuilder = () => {
     setIsGenerating(true);
 
     try {
-      const result = await callGenerateCode(updatedMessages);
+      const result = await callGenerateCode(updatedMessages, currentCode);
 
       if (result.creditsExhausted) {
         setCreditsMessage(result.message || "Créditos esgotados.");
@@ -199,6 +206,7 @@ const MainBuilder = () => {
 
       if (result.code) {
         setGeneratedCode(result.code);
+        setCurrentCode(result.code);
       }
 
       setMessages(prev => [
@@ -227,7 +235,7 @@ const MainBuilder = () => {
     setIsGenerating(true);
 
     try {
-      const result = await callGenerateCode(updatedMessages);
+      const result = await callGenerateCode(updatedMessages, currentCode);
 
       if (result.creditsExhausted) {
         setCreditsMessage(result.message || "Créditos esgotados.");

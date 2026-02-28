@@ -8,6 +8,7 @@ import {
   Eye,
   Download,
   Loader2,
+  Sparkles,
   Pencil,
   Save,
   X,
@@ -663,16 +664,36 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center p-8">
-                  <div className="text-center space-y-4 animate-fade-in">
-                    <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                      <Monitor className="h-8 w-8 text-primary-foreground" />
+              <div className="h-full flex items-center justify-center p-8">
+                  {isGenerating ? (
+                    <div className="text-center space-y-6 animate-fade-in w-full max-w-md">
+                      <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg animate-pulse">
+                        <Sparkles className="h-8 w-8 text-primary-foreground animate-spin" />
+                      </div>
+                      <h3 className="text-xl font-bold">Criando seu app...</h3>
+                      <p className="text-sm text-muted-foreground">A IA está gerando o código. Isso pode levar alguns segundos.</p>
+                      <div className="space-y-3 w-full">
+                        <div className="h-4 bg-muted rounded-full animate-pulse" />
+                        <div className="h-4 bg-muted rounded-full animate-pulse w-3/4" />
+                        <div className="h-32 bg-muted rounded-lg animate-pulse" />
+                        <div className="flex gap-3">
+                          <div className="h-10 bg-muted rounded-lg animate-pulse flex-1" />
+                          <div className="h-10 bg-muted rounded-lg animate-pulse flex-1" />
+                        </div>
+                        <div className="h-4 bg-muted rounded-full animate-pulse w-1/2" />
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold">{t("preview.yourApp")}</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      {t("preview.yourAppDesc")}
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="text-center space-y-4 animate-fade-in">
+                      <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                        <Monitor className="h-8 w-8 text-primary-foreground" />
+                      </div>
+                      <h3 className="text-2xl font-bold">{t("preview.yourApp")}</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto">
+                        {t("preview.yourAppDesc")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
