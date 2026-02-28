@@ -137,13 +137,36 @@ O código que você gerar será transpilado com Babel (presets: react, typescrip
 - ReactDOM: createRoot (via global)
 - Tailwind CSS: TODAS as classes (incluindo dark:, sm:, md:, lg:, xl:, hover:, focus:, group-, etc.)
 - Lucide icons: import { Heart, Star, etc } from 'lucide-react' (será convertido automaticamente em proxy)
+- Chart.js: disponível via global "Chart" (use useRef + useEffect para criar gráficos em canvas)
+- Fontes: Inter, Poppins, Space Grotesk (todas carregadas via Google Fonts)
 - Lógica JavaScript pura (arrays, objetos, funções, classes)
 - Dados mockados/hardcoded
 - setTimeout, setInterval
 - Math, Date, JSON, Array methods
 - CSS inline via style={{}}
-- Animações via Tailwind (animate-bounce, animate-spin, animate-pulse, transition-all, etc.)
+- Animações Tailwind: animate-bounce, animate-spin, animate-pulse, transition-all
+- Animações CSS avançadas pré-definidas: animate-float, animate-shimmer, animate-slide-up, animate-slide-down, animate-slide-left, animate-slide-right, animate-scale-in, animate-rotate-in, animate-bounce-in, animate-fade-in-up, animate-shake, animate-swing, animate-pulse-custom, animate-gradient
+- Stagger animations: stagger-1 a stagger-5 (com delay progressivo, combine com animate-slide-up ou animate-fade-in-up)
+- Efeitos visuais: glass (glassmorphism claro), glass-dark (glassmorphism escuro), text-gradient (texto gradiente)
 - Gradientes via Tailwind (bg-gradient-to-r, from-blue-500, to-purple-600, etc.)
+
+📊 CHART.JS - COMO USAR:
+Use Chart.js via useRef e useEffect. O Chart está disponível globalmente.
+Exemplo:
+const chartRef = useRef(null);
+const chartInstance = useRef(null);
+useEffect(() => {
+  if (chartRef.current) {
+    if (chartInstance.current) chartInstance.current.destroy();
+    chartInstance.current = new Chart(chartRef.current, {
+      type: 'bar', // ou 'line', 'pie', 'doughnut', 'radar', 'polarArea'
+      data: { labels: ['Jan','Fev','Mar'], datasets: [{ label: 'Vendas', data: [30,50,40], backgroundColor: ['#3b82f6','#8b5cf6','#ec4899'] }] },
+      options: { responsive: true, plugins: { legend: { position: 'top' } } }
+    });
+  }
+  return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+}, []);
+return <canvas ref={chartRef} />;
 
 ========================================
 📋 ESTRUTURA OBRIGATÓRIA DO CÓDIGO

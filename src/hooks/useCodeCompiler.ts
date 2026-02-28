@@ -249,13 +249,17 @@ export const useCodeCompiler = () => {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; img-src https: data: blob:; font-src https: data: https://fonts.gstatic.com; connect-src https:; worker-src blob:;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; img-src https: data: blob:; font-src https: data: https://fonts.gstatic.com; connect-src https:; worker-src blob:;" />
     <title>Preview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       * { box-sizing: border-box; }
       body {
@@ -266,6 +270,48 @@ export const useCodeCompiler = () => {
         -moz-osx-font-smoothing: grayscale;
       }
       #root { min-height: 100vh; }
+      
+      /* Advanced CSS Animations */
+      @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+      @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes slideDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes slideLeft { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+      @keyframes slideRight { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+      @keyframes scaleIn { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+      @keyframes rotateIn { from{opacity:0;transform:rotate(-10deg)} to{opacity:1;transform:rotate(0)} }
+      @keyframes bounceIn { 0%{opacity:0;transform:scale(0.3)} 50%{transform:scale(1.05)} 70%{transform:scale(0.9)} 100%{opacity:1;transform:scale(1)} }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+      @keyframes gradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+      @keyframes typewriter { from{width:0} to{width:100%} }
+      @keyframes blink { 0%,100%{border-color:transparent} 50%{border-color:currentColor} }
+      @keyframes shake { 0%,100%{transform:translateX(0)} 10%,30%,50%,70%,90%{transform:translateX(-5px)} 20%,40%,60%,80%{transform:translateX(5px)} }
+      @keyframes ripple { to{transform:scale(4);opacity:0} }
+      @keyframes fadeInUp { from{opacity:0;transform:translate3d(0,30px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+      @keyframes swing { 20%{transform:rotate3d(0,0,1,15deg)} 40%{transform:rotate3d(0,0,1,-10deg)} 60%{transform:rotate3d(0,0,1,5deg)} 80%{transform:rotate3d(0,0,1,-5deg)} 100%{transform:rotate3d(0,0,1,0deg)} }
+      
+      .animate-float { animation: float 3s ease-in-out infinite; }
+      .animate-shimmer { animation: shimmer 2s linear infinite; background-size: 200% 100%; }
+      .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+      .animate-slide-down { animation: slideDown 0.5s ease-out forwards; }
+      .animate-slide-left { animation: slideLeft 0.5s ease-out forwards; }
+      .animate-slide-right { animation: slideRight 0.5s ease-out forwards; }
+      .animate-scale-in { animation: scaleIn 0.4s ease-out forwards; }
+      .animate-rotate-in { animation: rotateIn 0.5s ease-out forwards; }
+      .animate-bounce-in { animation: bounceIn 0.6s ease-out forwards; }
+      .animate-pulse-custom { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+      .animate-gradient { animation: gradient 3s ease infinite; background-size: 200% 200%; }
+      .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+      .animate-shake { animation: shake 0.5s ease-in-out; }
+      .animate-swing { animation: swing 1s ease-in-out; }
+      .stagger-1 { animation-delay: 0.1s; opacity: 0; }
+      .stagger-2 { animation-delay: 0.2s; opacity: 0; }
+      .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+      .stagger-4 { animation-delay: 0.4s; opacity: 0; }
+      .stagger-5 { animation-delay: 0.5s; opacity: 0; }
+      .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+      .glass-dark { background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+      .text-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     </style>
   </head>
   <body>
