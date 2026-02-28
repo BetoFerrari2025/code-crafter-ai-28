@@ -291,7 +291,7 @@ Retorne DIRETAMENTE o código React começando com imports.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [{ role: 'system', content: systemPrompt }, ...contextualizedMessages],
         temperature: 0.7,
         stream: true,
