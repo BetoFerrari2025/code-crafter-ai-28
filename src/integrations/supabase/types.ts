@@ -253,6 +253,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_monthly_credits: {
+        Row: {
+          created_at: string
+          credits_used: number
+          id: string
+          max_credits: number
+          updated_at: string
+          usage_month: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          id?: string
+          max_credits?: number
+          updated_at?: string
+          usage_month?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          id?: string
+          max_credits?: number
+          updated_at?: string
+          usage_month?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

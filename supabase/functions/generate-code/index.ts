@@ -55,13 +55,21 @@ serve(async (req: Request) => {
     }
 
     if (!creditResult.allowed) {
+      const isMonthly = creditResult.monthly_exhausted === true;
+      const message = isMonthly
+        ? `Você atingiu o limite de ${creditResult.monthly_max} créditos mensais. Seus créditos serão renovados no dia 1 do próximo mês. Faça upgrade para continuar criando.`
+        : `Você atingiu o limite de ${creditResult.max_credits} créditos diários. Seus créditos diários serão renovados à meia-noite. Faça upgrade do seu plano para continuar criando.`;
       return new Response(
         JSON.stringify({
           error: 'credits_exhausted',
-          message: `Você atingiu o limite de ${creditResult.max_credits} créditos diários. Faça upgrade do seu plano para continuar criando.`,
+          message,
           credits_used: creditResult.credits_used,
           max_credits: creditResult.max_credits,
           remaining: 0,
+          monthly_used: creditResult.monthly_used,
+          monthly_max: creditResult.monthly_max,
+          monthly_remaining: creditResult.monthly_remaining ?? 0,
+          monthly_exhausted: isMonthly,
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -327,12 +335,15 @@ Retorne DIRETAMENTE o código React começando com imports.`;
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Send credit info first
+          // Send credit info first (includes monthly data)
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'credits',
             credits_used: creditResult.credits_used,
             max_credits: creditResult.max_credits,
             remaining: creditResult.remaining,
+            monthly_used: creditResult.monthly_used,
+            monthly_max: creditResult.monthly_max,
+            monthly_remaining: creditResult.monthly_remaining,
           })}\n\n`));
 
           const reader = response.body?.getReader();

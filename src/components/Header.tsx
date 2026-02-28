@@ -20,6 +20,9 @@ const Header = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [creditsRemaining, setCreditsRemaining] = useState<number>(5);
   const [maxCredits, setMaxCredits] = useState<number>(5);
+  const [monthlyUsed, setMonthlyUsed] = useState<number>(0);
+  const [monthlyMax, setMonthlyMax] = useState<number>(30);
+  const [monthlyRemaining, setMonthlyRemaining] = useState<number>(30);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
@@ -39,6 +42,24 @@ const Header = () => {
       } else {
         setCreditsRemaining(5);
         setMaxCredits(5);
+      }
+
+      // Fetch monthly credits
+      const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+      const { data: monthlyData } = await supabase
+        .from("user_monthly_credits")
+        .select("credits_used, max_credits")
+        .eq("user_id", uid)
+        .eq("usage_month", currentMonth)
+        .maybeSingle();
+      if (monthlyData) {
+        setMonthlyUsed(monthlyData.credits_used);
+        setMonthlyMax(monthlyData.max_credits);
+        setMonthlyRemaining(monthlyData.max_credits - monthlyData.credits_used);
+      } else {
+        setMonthlyUsed(0);
+        setMonthlyMax(30);
+        setMonthlyRemaining(30);
       }
     } catch (e) {
       console.error("Error fetching credits:", e);
@@ -74,6 +95,11 @@ const Header = () => {
     const handleCreditsUpdate = (e: CustomEvent) => {
       setCreditsRemaining(e.detail.remaining ?? 0);
       setMaxCredits(e.detail.max_credits ?? 5);
+      if (e.detail.monthly_used !== undefined) {
+        setMonthlyUsed(e.detail.monthly_used);
+        setMonthlyMax(e.detail.monthly_max ?? 30);
+        setMonthlyRemaining(e.detail.monthly_remaining ?? 0);
+      }
     };
     window.addEventListener('credits-updated', handleCreditsUpdate as EventListener);
     return () => window.removeEventListener('credits-updated', handleCreditsUpdate as EventListener);
@@ -195,15 +221,35 @@ const Header = () => {
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t("header.credits")}</span>
-                        <button className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                          {creditsRemaining} {t("header.remaining")}
-                          <ChevronRight className="h-3 w-3" />
-                        </button>
+                        <span className="text-sm font-medium">Créditos diários</span>
+                        <span className="text-sm text-muted-foreground">
+                          {creditsRemaining}/{maxCredits}
+                        </span>
                       </div>
-                      <Progress value={maxCredits > 0 ? ((maxCredits - creditsRemaining) / maxCredits) * 100 : 0} className="h-2" />
+                      <Progress value={maxCredits > 0 ? (creditsRemaining / maxCredits) * 100 : 0} className="h-2" />
                       <p className="text-xs text-muted-foreground">{t("header.creditsReset")}</p>
                     </div>
+
+                    {monthlyMax < 999999 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Créditos mensais</span>
+                          <span className="text-sm text-muted-foreground">
+                            {monthlyRemaining}/{monthlyMax}
+                          </span>
+                        </div>
+                        <Progress value={monthlyMax > 0 ? (monthlyRemaining / monthlyMax) * 100 : 0} className="h-2" />
+                        {monthlyRemaining <= 0 ? (
+                          <p className="text-xs text-destructive font-medium">
+                            ⚠️ Créditos mensais esgotados. Renova dia 1 do próximo mês.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            {monthlyUsed}/{monthlyMax} usados este mês
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <Separator />
 

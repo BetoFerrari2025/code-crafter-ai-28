@@ -109,12 +109,14 @@ const MainBuilder = () => {
           } else if (parsed.type === 'error') {
             errorMessage = parsed.message;
           } else if (parsed.type === 'credits') {
-            // Dispatch event to update credit displays across the app
             window.dispatchEvent(new CustomEvent('credits-updated', {
               detail: {
                 credits_used: parsed.credits_used,
                 max_credits: parsed.max_credits,
                 remaining: parsed.remaining,
+                monthly_used: parsed.monthly_used,
+                monthly_max: parsed.monthly_max,
+                monthly_remaining: parsed.monthly_remaining,
               }
             }));
           }
