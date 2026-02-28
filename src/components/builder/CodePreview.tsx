@@ -21,10 +21,12 @@ import {
   RefreshCw,
   Github,
   Database,
+  MoreVertical,
 } from "lucide-react";
 import VersionHistoryPanel from "./VersionHistoryPanel";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -324,99 +326,130 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
     <div className="flex-1 h-full bg-background flex flex-row">
       <div className="flex-1 flex flex-col">
         {/* Topbar */}
-        <div className="h-14 md:h-16 border-b border-border bg-background flex items-center justify-between px-2 md:px-4 gap-1 md:gap-2 overflow-x-auto">
-          <div className="flex items-center gap-2">
+        <div className="h-14 md:h-16 border-b border-border bg-background flex items-center justify-between px-2 md:px-4 gap-1 md:gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             {/* Display mode toggle */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
               <Button
                 variant={displayMode === "preview" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setDisplayMode("preview")}
-                className="h-8 px-3"
+                className="h-8 px-2 md:px-3"
                 title="Visualizar"
               >
-                <Eye className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">{t("preview.preview")}</span>
+                <Eye className="h-4 w-4" />
+                <span className="hidden md:inline ml-1">{t("preview.preview")}</span>
               </Button>
               <Button
                 variant={displayMode === "code" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setDisplayMode("code")}
-                className="h-8 px-3"
+                className="h-8 px-2 md:px-3"
                 title={t("preview.code")}
               >
-                <Code2 className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">{t("preview.code")}</span>
+                <Code2 className="h-4 w-4" />
+                <span className="hidden md:inline ml-1">{t("preview.code")}</span>
               </Button>
             </div>
 
-            {/* Undo/Redo */}
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title={t("preview.undo")} className="h-8 w-8">
-                <Undo2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title={t("preview.redo")} className="h-8 w-8">
-                <Redo2 className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* Undo/Redo - always visible */}
+            <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title={t("preview.undo")} className="h-8 w-8">
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title={t("preview.redo")} className="h-8 w-8">
+              <Redo2 className="h-4 w-4" />
+            </Button>
 
-            <Button variant="ghost" size="icon" onClick={handleCopyCode} disabled={!displayCode} title={t("preview.copyCode")} className="h-8 w-8">
-              {isCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleRecompilePreview} disabled={!displayCode} title={t("preview.reload")} className="h-8 w-8">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleDownloadCode} disabled={!displayCode} title={t("preview.download")} className="h-8 w-8">
-              <Download className="h-4 w-4" />
-            </Button>
-            <Button variant="default" size="sm" onClick={handleSaveAndShare} disabled={!displayCode || isSaving} className="gap-2 h-8">
+            {/* Publish - always visible */}
+            <Button variant="default" size="sm" onClick={handleSaveAndShare} disabled={!displayCode || isSaving} className="gap-1 h-8 px-2 md:px-3">
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-              <span className="hidden sm:inline">{t("preview.publish")}</span>
-            </Button>
-            <Button
-              variant={showHistory ? "secondary" : "ghost"}
-              size="icon"
-              onClick={() => setShowHistory(!showHistory)}
-              disabled={history.length === 0}
-              title={t("preview.versionHistory")}
-              className="h-8 w-8"
-            >
-              <Clock className="h-4 w-4" />
+              <span className="hidden md:inline">{t("preview.publish")}</span>
             </Button>
 
-            {/* Separador */}
-            <div className="w-px h-6 bg-border mx-1" />
+            {/* Desktop: show all icons inline */}
+            <div className="hidden md:flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={handleCopyCode} disabled={!displayCode} title={t("preview.copyCode")} className="h-8 w-8">
+                {isCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleRecompilePreview} disabled={!displayCode} title={t("preview.reload")} className="h-8 w-8">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleDownloadCode} disabled={!displayCode} title={t("preview.download")} className="h-8 w-8">
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={showHistory ? "secondary" : "ghost"}
+                size="icon"
+                onClick={() => setShowHistory(!showHistory)}
+                disabled={history.length === 0}
+                title={t("preview.versionHistory")}
+                className="h-8 w-8"
+              >
+                <Clock className="h-4 w-4" />
+              </Button>
+              <div className="w-px h-6 bg-border mx-1" />
+              <Button
+                variant={githubConnected ? "secondary" : "ghost"}
+                size="icon"
+                onClick={() => setShowGithubDialog(true)}
+                title={githubConnected ? t("connect.githubConnected") : t("connect.github")}
+                className="h-8 w-8 relative"
+              >
+                <Github className="h-4 w-4" />
+                {githubConnected && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background" />
+                )}
+              </Button>
+              <Button
+                variant={supabaseConnected ? "secondary" : "ghost"}
+                size="icon"
+                onClick={() => setShowSupabaseDialog(true)}
+                title={supabaseConnected ? t("connect.supabaseConnected") : t("connect.supabase")}
+                className="h-8 w-8 relative"
+              >
+                <Database className="h-4 w-4" />
+                {supabaseConnected && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background" />
+                )}
+              </Button>
+            </div>
 
-            {/* GitHub */}
-            <Button
-              variant={githubConnected ? "secondary" : "ghost"}
-              size="icon"
-              onClick={() => setShowGithubDialog(true)}
-              title={githubConnected ? t("connect.githubConnected") : t("connect.github")}
-              className="h-8 w-8 relative"
-            >
-              <Github className="h-4 w-4" />
-              {githubConnected && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background" />
-              )}
-            </Button>
-
-            {/* Supabase */}
-            <Button
-              variant={supabaseConnected ? "secondary" : "ghost"}
-              size="icon"
-              onClick={() => setShowSupabaseDialog(true)}
-              title={supabaseConnected ? t("connect.supabaseConnected") : t("connect.supabase")}
-              className="h-8 w-8 relative"
-            >
-              <Database className="h-4 w-4" />
-              {supabaseConnected && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background" />
-              )}
-            </Button>
+            {/* Mobile: overflow menu */}
+            <div className="md:hidden">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-48 p-2">
+                  <div className="flex flex-col gap-1">
+                    <button onClick={handleCopyCode} disabled={!displayCode} className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors disabled:opacity-30 text-foreground">
+                      <Copy className="h-4 w-4" /> {t("preview.copyCode")}
+                    </button>
+                    <button onClick={handleRecompilePreview} disabled={!displayCode} className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors disabled:opacity-30 text-foreground">
+                      <RefreshCw className="h-4 w-4" /> {t("preview.reload")}
+                    </button>
+                    <button onClick={handleDownloadCode} disabled={!displayCode} className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors disabled:opacity-30 text-foreground">
+                      <Download className="h-4 w-4" /> Download
+                    </button>
+                    <button onClick={() => setShowHistory(!showHistory)} disabled={history.length === 0} className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors disabled:opacity-30 text-foreground">
+                      <Clock className="h-4 w-4" /> {t("preview.versionHistory")}
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    <button onClick={() => setShowGithubDialog(true)} className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-foreground">
+                      <Github className="h-4 w-4" /> GitHub
+                    </button>
+                    <button onClick={() => setShowSupabaseDialog(true)} className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-foreground">
+                      <Database className="h-4 w-4" /> Database
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          {/* Device mode - hidden on mobile */}
+          {/* Device mode - desktop only */}
           <div className="hidden md:flex items-center gap-1 bg-muted/50 rounded-lg p-1">
             <Button variant={viewMode === "desktop" ? "default" : "ghost"} size="icon" onClick={() => setViewMode("desktop")} className="h-8 w-8">
               <Monitor className="h-4 w-4" />
@@ -431,7 +464,7 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
 
           <div className="text-sm text-muted-foreground flex items-center gap-2">
             {(isGenerating || isCompiling) && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isGenerating ? t("preview.generating") : isCompiling ? t("preview.compiling") : t("preview.livePreview")}
+            <span className="hidden sm:inline">{isGenerating ? t("preview.generating") : isCompiling ? t("preview.compiling") : t("preview.livePreview")}</span>
           </div>
         </div>
 
@@ -567,8 +600,8 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center p-8">
-                  <div className="text-center space-y-4 animate-fade-in flex-1 flex flex-col items-center justify-center">
+                <div className="h-full flex items-center justify-center p-8">
+                  <div className="text-center space-y-4 animate-fade-in">
                     <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                       <Monitor className="h-8 w-8 text-primary-foreground" />
                     </div>
@@ -576,29 +609,6 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                     <p className="text-muted-foreground max-w-md mx-auto">
                       {t("preview.yourAppDesc")}
                     </p>
-                  </div>
-                  {/* Footer icons */}
-                  <div className="flex items-center justify-center gap-6 py-4 border-t border-border w-full mt-auto">
-                    <button onClick={() => setDisplayMode("code")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-                      <Code2 className="h-5 w-5" />
-                      <span className="text-[10px]">{t("preview.code")}</span>
-                    </button>
-                    <button onClick={handleDownloadCode} disabled={!displayCode} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-30">
-                      <Download className="h-5 w-5" />
-                      <span className="text-[10px]">Download</span>
-                    </button>
-                    <button onClick={() => setShowGithubDialog(true)} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-                      <Github className="h-5 w-5" />
-                      <span className="text-[10px]">GitHub</span>
-                    </button>
-                    <button onClick={() => setShowSupabaseDialog(true)} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-                      <Database className="h-5 w-5" />
-                      <span className="text-[10px]">Database</span>
-                    </button>
-                    <button onClick={() => setShowHistory(!showHistory)} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-                      <Clock className="h-5 w-5" />
-                      <span className="text-[10px]">{t("preview.versionHistory")}</span>
-                    </button>
                   </div>
                 </div>
               )}
