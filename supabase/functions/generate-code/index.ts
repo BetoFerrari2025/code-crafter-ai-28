@@ -129,6 +129,8 @@ O código que você gerar será transpilado com Babel (presets: react, typescrip
 - "as const" assertions complexas
 - Decorators (@)
 - Top-level await
+- NUNCA escreva "const { ... } = LucideIcons;" — isso é INJETADO AUTOMATICAMENTE pelo compilador a partir dos imports de lucide-react
+- NUNCA duplique declarações de variáveis ou destructurings no código
 
 ✅ O QUE FUNCIONA:
 - React hooks: useState, useEffect, useRef, useMemo, useCallback, createContext, useContext, useReducer
