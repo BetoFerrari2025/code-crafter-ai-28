@@ -567,8 +567,8 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center p-8">
-                  <div className="text-center space-y-4 animate-fade-in">
+                <div className="h-full flex flex-col items-center justify-center p-8">
+                  <div className="text-center space-y-4 animate-fade-in flex-1 flex flex-col items-center justify-center">
                     <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                       <Monitor className="h-8 w-8 text-primary-foreground" />
                     </div>
@@ -576,6 +576,29 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                     <p className="text-muted-foreground max-w-md mx-auto">
                       {t("preview.yourAppDesc")}
                     </p>
+                  </div>
+                  {/* Footer icons */}
+                  <div className="flex items-center justify-center gap-6 py-4 border-t border-border w-full mt-auto">
+                    <button onClick={() => setDisplayMode("code")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+                      <Code2 className="h-5 w-5" />
+                      <span className="text-[10px]">{t("preview.code")}</span>
+                    </button>
+                    <button onClick={handleDownloadCode} disabled={!displayCode} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-30">
+                      <Download className="h-5 w-5" />
+                      <span className="text-[10px]">Download</span>
+                    </button>
+                    <button onClick={() => setShowGithubDialog(true)} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+                      <Github className="h-5 w-5" />
+                      <span className="text-[10px]">GitHub</span>
+                    </button>
+                    <button onClick={() => setShowSupabaseDialog(true)} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+                      <Database className="h-5 w-5" />
+                      <span className="text-[10px]">Database</span>
+                    </button>
+                    <button onClick={() => setShowHistory(!showHistory)} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+                      <Clock className="h-5 w-5" />
+                      <span className="text-[10px]">{t("preview.versionHistory")}</span>
+                    </button>
                   </div>
                 </div>
               )}

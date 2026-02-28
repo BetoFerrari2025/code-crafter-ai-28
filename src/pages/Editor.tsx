@@ -214,8 +214,11 @@ const Editor = () => {
 
       {/* DESKTOP LAYOUT (>= md) */}
       <div className="hidden md:flex flex-1 overflow-hidden relative pt-16">
-        {chatOpen && (
-          <div className="flex">
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ width: chatOpen ? '380px' : '0px', minWidth: chatOpen ? '380px' : '0px' }}
+        >
+          <div className="w-[380px] h-full">
             <ChatSidebar
               onCodeGenerated={setGeneratedCode}
               currentCode={generatedCode}
@@ -225,7 +228,7 @@ const Editor = () => {
               onInitialPromptHandled={() => setInitialPrompt("")}
             />
           </div>
-        )}
+        </div>
         <div className="flex-1 relative">
           <Button
             variant="outline"
