@@ -41,7 +41,12 @@ export const useCodeCompiler = () => {
       .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
       .trim();
 
-    // Add lucide icon destructuring from the proxy
+    // Remove any existing LucideIcons destructuring lines (from previous iterations)
+    cleaned = cleaned
+      .replace(/^const\s*\{[^}]*\}\s*=\s*LucideIcons;\s*$/gm, '')
+      .trim();
+
+    // Add lucide icon destructuring from the proxy (single line, deduplicated)
     if (lucideIcons.length > 0) {
       const uniqueIcons = [...new Set(lucideIcons)];
       cleaned = `const { ${uniqueIcons.join(', ')} } = LucideIcons;\n${cleaned}`;
