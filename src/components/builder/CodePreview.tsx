@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Monitor,
@@ -77,6 +77,10 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseKey, setSupabaseKey] = useState("");
   const [supabaseConnected, setSupabaseConnected] = useState(false);
+  const [autoFixAttempts, setAutoFixAttempts] = useState(0);
+  const [lastAutoFixError, setLastAutoFixError] = useState<string | null>(null);
+  const autoFixTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_AUTO_FIX_ATTEMPTS = 3;
   const { toast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -141,13 +145,61 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
       setEditedCode(cleaned);
       addVersion(cleaned, t("preview.aiGenerated"));
 
-      updatePreviewFromCode(generatedCode);
+      const result = updatePreviewFromCode(generatedCode);
+      
+      // Reset auto-fix attempts on successful compilation
+      if (!result.error) {
+        setAutoFixAttempts(0);
+        setLastAutoFixError(null);
+      }
 
       if (onCodeChange) {
         onCodeChange(cleaned);
       }
     }
   }, [generatedCode, cleanCode, addVersion, onCodeChange, updatePreviewFromCode]);
+
+  // Auto-fix: automatically send error to AI when detected
+  useEffect(() => {
+    if (
+      compilationError && 
+      onRequestFix && 
+      autoFixAttempts < MAX_AUTO_FIX_ATTEMPTS && 
+      !isGenerating &&
+      compilationError !== lastAutoFixError
+    ) {
+      // Clear any pending timeout
+      if (autoFixTimeoutRef.current) {
+        clearTimeout(autoFixTimeoutRef.current);
+      }
+      
+      // Delay to avoid rapid-fire requests
+      autoFixTimeoutRef.current = setTimeout(() => {
+        setAutoFixAttempts(prev => prev + 1);
+        setLastAutoFixError(compilationError);
+        
+        const telemetry = errorTelemetry || {
+          error: compilationError,
+          phase: 'compilation' as const,
+          codeSnippet: displayCode?.slice(0, 500),
+          timestamp: Date.now(),
+        };
+        
+        toast({
+          title: `🔧 Auto-correção (${autoFixAttempts + 1}/${MAX_AUTO_FIX_ATTEMPTS})`,
+          description: "Enviando erro para a IA corrigir automaticamente...",
+        });
+        
+        onRequestFix(compilationError, telemetry);
+      }, 2000);
+    }
+    
+    return () => {
+      if (autoFixTimeoutRef.current) {
+        clearTimeout(autoFixTimeoutRef.current);
+      }
+    };
+  }, [compilationError, onRequestFix, autoFixAttempts, isGenerating, lastAutoFixError]);
 
   const handleUndo = useCallback(() => {
     const version = undo();
@@ -492,6 +544,16 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                         {/* Try to fix button - appears on compilation error */}
                         {compilationError && displayMode === "preview" && (
                           <div className="flex items-center gap-1">
+                            {autoFixAttempts > 0 && autoFixAttempts < MAX_AUTO_FIX_ATTEMPTS && (
+                              <Badge variant="outline" className="text-xs animate-pulse border-primary/30 text-primary">
+                                🔧 Auto-corrigindo ({autoFixAttempts}/{MAX_AUTO_FIX_ATTEMPTS})
+                              </Badge>
+                            )}
+                            {autoFixAttempts >= MAX_AUTO_FIX_ATTEMPTS && (
+                              <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
+                                Auto-correção esgotada
+                              </Badge>
+                            )}
                             {lastWorkingCode && (
                               <Button
                                 size="sm"
@@ -503,11 +565,15 @@ const CodePreview = ({ generatedCode, isGenerating, onCodeChange, onRequestFix }
                                 {t("preview.restore")}
                               </Button>
                             )}
-                            {onRequestFix && (
+                            {onRequestFix && autoFixAttempts >= MAX_AUTO_FIX_ATTEMPTS && (
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={handleTryFix}
+                                onClick={() => {
+                                  setAutoFixAttempts(0);
+                                  setLastAutoFixError(null);
+                                  handleTryFix();
+                                }}
                                 className="h-7 text-xs gap-1 animate-fade-in"
                               >
                                 <Wrench className="h-3 w-3" />
