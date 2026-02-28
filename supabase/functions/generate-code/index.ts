@@ -83,7 +83,8 @@ serve(async (req: Request) => {
     });
 
     const requestSchema = z.object({
-      messages: z.array(messageSchema).min(1).max(100)
+      messages: z.array(messageSchema).min(1).max(100),
+      currentCode: z.string().max(100000).optional()
     });
 
     const body = await req.json();
@@ -96,8 +97,8 @@ serve(async (req: Request) => {
       );
     }
     
-    const { messages } = validation.data;
-    console.log("📩 Processing", messages.length, "messages for user", user.id, "| Credits remaining:", creditResult.remaining);
+    const { messages, currentCode } = validation.data;
+    console.log("📩 Processing", messages.length, "messages for user", user.id, "| Credits remaining:", creditResult.remaining, "| Has existing code:", !!currentCode);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -262,25 +263,28 @@ Retorne DIRETAMENTE o código React começando com imports.`;
       return { role: msg.role, content: msg.content };
     });
 
-    // Add code context for corrections
+    // Add code context - ALWAYS inject current code when available
     const contextualizedMessages = [...formattedMessages];
-    let currentCode = '';
-    for (let i = messages.length - 2; i >= 0; i--) {
-      if (messages[i].role === 'assistant' || messages[i].content?.includes('import React')) {
-        currentCode = messages[i].content || '';
-        break;
-      }
-    }
-
+    
     if (currentCode && messages.length > 1) {
       const lastMsg = contextualizedMessages[contextualizedMessages.length - 1];
       const originalContent = typeof lastMsg.content === 'string' ? lastMsg.content : lastMsg.content[0]?.text || '';
-      if (/(corrija|corrige|ajusta|ajuste|modifica|modifique|mude|altere|conserte|conserta|arruma|arrume)/i.test(originalContent)) {
-        if (typeof lastMsg.content === 'string') {
-          lastMsg.content = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido!`;
-        } else if (Array.isArray(lastMsg.content)) {
-          lastMsg.content[0].text = `${originalContent}\n\nCÓDIGO ATUAL QUE DEVE SER MODIFICADO:\n\`\`\`tsx\n${currentCode}\n\`\`\`\n\nLembre-se: MODIFIQUE APENAS o que foi pedido!`;
-        }
+      
+      const contextInstruction = `IMPORTANTE: O usuário JÁ TEM um projeto criado. Você DEVE modificar APENAS o que foi pedido no código existente abaixo. NÃO crie um projeto novo do zero. Faça SOMENTE as alterações solicitadas e retorne o código COMPLETO com as modificações aplicadas.
+
+CÓDIGO ATUAL DO PROJETO (modifique este código):
+\`\`\`tsx
+${currentCode}
+\`\`\`
+
+PEDIDO DO USUÁRIO: ${originalContent}
+
+Retorne o código COMPLETO com APENAS as modificações pedidas aplicadas.`;
+      
+      if (typeof lastMsg.content === 'string') {
+        lastMsg.content = contextInstruction;
+      } else if (Array.isArray(lastMsg.content)) {
+        lastMsg.content[0].text = contextInstruction;
       }
     }
 
