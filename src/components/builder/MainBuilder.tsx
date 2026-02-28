@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { SendHorizonal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CodePreview from "@/components/builder/CodePreview";
+import CreditsExhaustedAlert from "@/components/CreditsExhaustedAlert";
 
 interface Message {
   role: "user" | "assistant";
@@ -26,6 +27,8 @@ const MainBuilder = () => {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [creditsExhausted, setCreditsExhausted] = useState(false);
+  const [creditsMessage, setCreditsMessage] = useState("");
 
   // Authentication check
   useEffect(() => {
@@ -54,56 +57,115 @@ const MainBuilder = () => {
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
+  const callGenerateCode = useCallback(async (messagesToSend: Message[]): Promise<{ code?: string; message?: string; creditsExhausted?: boolean }> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Não autenticado");
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ messages: messagesToSend }),
+    });
+
+    // Handle 429 credits exhausted (returns JSON, not SSE)
+    if (response.status === 429) {
+      const errorData = await response.json();
+      return {
+        creditsExhausted: true,
+        message: errorData.message || "Créditos diários esgotados.",
+      };
+    }
+
+    // Parse SSE stream
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Sem resposta do servidor");
+
+    let code = '';
+    let errorMessage = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += new TextDecoder().decode(value);
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'code' && parsed.code) {
+            code = parsed.code;
+          } else if (parsed.type === 'error') {
+            errorMessage = parsed.message;
+          } else if (parsed.type === 'credits') {
+            // Dispatch event to update credit displays across the app
+            window.dispatchEvent(new CustomEvent('credits-updated', {
+              detail: {
+                credits_used: parsed.credits_used,
+                max_credits: parsed.max_credits,
+                remaining: parsed.remaining,
+              }
+            }));
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+
+    if (errorMessage) {
+      return { message: errorMessage };
+    }
+    if (code) {
+      return { code, message: "✅ Código gerado! Veja o preview ao lado." };
+    }
+    return { message: "A IA não retornou código válido. Tente reformular." };
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const newMessage: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     setInput("");
     setIsGenerating(true);
 
     try {
-      // Use supabase.functions.invoke for authenticated calls
-      const { data, error } = await supabase.functions.invoke('generate-code', {
-        body: { messages: [...messages, newMessage] }
-      });
+      const result = await callGenerateCode(updatedMessages);
 
-      if (error) {
-        throw error;
-      }
-      
-      // Verificar o tipo de resposta da IA
-      if (data.type === 'code' && data.code) {
-        // É um comando de geração - atualizar preview
-        setGeneratedCode(data.code);
-        setMessages((prev) => [
+      if (result.creditsExhausted) {
+        setCreditsMessage(result.message || "Créditos esgotados.");
+        setCreditsExhausted(true);
+        setMessages(prev => [
           ...prev,
-          { role: "assistant", content: data.message || "✅ Código gerado! Veja o preview ao lado." },
+          { role: "assistant", content: `⚠️ ${result.message}` },
         ]);
-      } else if (data.type === 'message') {
-        // É apenas uma conversa - não atualizar preview
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.message },
-        ]);
-      } else {
-        // Fallback para compatibilidade
-        if (data.code) {
-          setGeneratedCode(data.code);
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: "✅ Código gerado! Veja o preview ao lado." },
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.message || "Resposta recebida." },
-          ]);
-        }
+        return;
       }
+
+      if (result.code) {
+        setGeneratedCode(result.code);
+      }
+
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", content: result.message || "Resposta recebida." },
+      ]);
     } catch (err) {
       console.error('Erro ao gerar código:', err);
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         { role: "assistant", content: "❌ Ocorreu um erro ao processar sua solicitação." },
       ]);
@@ -111,6 +173,39 @@ const MainBuilder = () => {
       setIsGenerating(false);
     }
   };
+
+  const handleRequestFix = useCallback(async (error: string) => {
+    const fixMessage: Message = {
+      role: "user",
+      content: `O código anterior gerou este erro de compilação no preview. Corrija o código mantendo a mesma funcionalidade:\n\nERRO: ${error}\n\nRetorne o código completo corrigido.`,
+    };
+
+    const updatedMessages = [...messages, fixMessage];
+    setMessages(updatedMessages);
+    setIsGenerating(true);
+
+    try {
+      const result = await callGenerateCode(updatedMessages);
+
+      if (result.creditsExhausted) {
+        setCreditsMessage(result.message || "Créditos esgotados.");
+        setCreditsExhausted(true);
+        return;
+      }
+
+      if (result.code) {
+        setGeneratedCode(result.code);
+        setMessages(prev => [
+          ...prev,
+          { role: "assistant", content: "🔧 Código corrigido automaticamente." },
+        ]);
+      }
+    } catch (err) {
+      console.error('Erro ao corrigir:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [messages, callGenerateCode]);
 
   if (isLoading) {
     return (
@@ -169,11 +264,20 @@ const MainBuilder = () => {
 
       {/* Preview */}
       <div className="flex-1">
-        <CodePreview generatedCode={generatedCode ?? ""} isGenerating={isGenerating} />
+        <CodePreview
+          generatedCode={generatedCode ?? ""}
+          isGenerating={isGenerating}
+          onRequestFix={handleRequestFix}
+        />
       </div>
+
+      <CreditsExhaustedAlert
+        open={creditsExhausted}
+        onOpenChange={setCreditsExhausted}
+        message={creditsMessage}
+      />
     </div>
   );
 };
 
 export default MainBuilder;
-

@@ -18,9 +18,32 @@ const Header = () => {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(5);
+  const [maxCredits, setMaxCredits] = useState<number>(5);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+
+  const fetchCredits = async (uid: string) => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("user_daily_credits")
+        .select("credits_used, max_credits")
+        .eq("user_id", uid)
+        .eq("usage_date", today)
+        .maybeSingle();
+      if (data) {
+        setCreditsRemaining(data.max_credits - data.credits_used);
+        setMaxCredits(data.max_credits);
+      } else {
+        setCreditsRemaining(5);
+        setMaxCredits(5);
+      }
+    } catch (e) {
+      console.error("Error fetching credits:", e);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,6 +51,7 @@ const Header = () => {
       if (session?.user) {
         fetchAvatar(session.user.id);
         checkAdmin(session.user.id);
+        fetchCredits(session.user.id);
       }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -35,12 +59,24 @@ const Header = () => {
       if (session?.user) {
         fetchAvatar(session.user.id);
         checkAdmin(session.user.id);
+        fetchCredits(session.user.id);
       } else {
         setAvatarUrl(null);
         setIsAdmin(false);
+        setCreditsRemaining(5);
       }
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Listen for credit updates from the builder
+  useEffect(() => {
+    const handleCreditsUpdate = (e: CustomEvent) => {
+      setCreditsRemaining(e.detail.remaining ?? 0);
+      setMaxCredits(e.detail.max_credits ?? 5);
+    };
+    window.addEventListener('credits-updated', handleCreditsUpdate as EventListener);
+    return () => window.removeEventListener('credits-updated', handleCreditsUpdate as EventListener);
   }, []);
 
   const fetchAvatar = async (uid: string) => {
@@ -161,11 +197,11 @@ const Header = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">{t("header.credits")}</span>
                         <button className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                          5 {t("header.remaining")}
+                          {creditsRemaining} {t("header.remaining")}
                           <ChevronRight className="h-3 w-3" />
                         </button>
                       </div>
-                      <Progress value={100} className="h-2" />
+                      <Progress value={maxCredits > 0 ? ((maxCredits - creditsRemaining) / maxCredits) * 100 : 0} className="h-2" />
                       <p className="text-xs text-muted-foreground">{t("header.creditsReset")}</p>
                     </div>
 
