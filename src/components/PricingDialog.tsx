@@ -75,7 +75,11 @@ const PricingDialog = ({ open, onOpenChange }: PricingDialogProps) => {
                 </div>
               </div>
 
-              <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
+              <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full" onClick={() => {
+                if (typeof (window as any).fbq === 'function') {
+                  (window as any).fbq('track', 'Lead');
+                }
+              }}>
                 <Button className="w-full mb-6">
                   {t("pricing.upgrade")}
                 </Button>
