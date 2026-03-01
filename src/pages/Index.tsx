@@ -10,6 +10,7 @@ import { TypeAnimation } from "react-type-animation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import TrackingScripts from "@/components/TrackingScripts";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 const Index = () => {
   const [prompt, setPrompt] = useState("");
@@ -146,6 +147,7 @@ const Index = () => {
       </div>
 
       <ProjectsWorkspace />
+      <WhatsAppFloatingButton />
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CodePreview from "@/components/builder/CodePreview";
 import CreditsExhaustedAlert from "@/components/CreditsExhaustedAlert";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 interface Message {
   role: "user" | "assistant";
@@ -344,6 +345,7 @@ const MainBuilder = () => {
         onOpenChange={setCreditsExhausted}
         message={creditsMessage}
       />
+      <WhatsAppFloatingButton />
     </div>
   );
 };
