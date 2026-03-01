@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Settings, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ManageSubscriptionDialog from "@/components/ManageSubscriptionDialog";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import ProjectConnections from "@/components/ProjectConnections";
 import PricingDialog from "@/components/PricingDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -196,6 +197,7 @@ export default function Dashboard() {
         <ManageSubscriptionDialog open={showManageDialog} onOpenChange={setShowManageDialog} currentPlan={subscription.plan_name} subscriptionId={subscription.stripe_subscription_id} onSuccess={() => { if (userId) fetchSubscription(userId); }} />
       )}
       <PricingDialog open={showPricingDialog} onOpenChange={setShowPricingDialog} />
+      <WhatsAppFloatingButton />
     </div>
   );
 }

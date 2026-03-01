@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import { Search, ExternalLink, Eye, Calendar, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 interface PublishedProject {
   id: string;
@@ -125,6 +126,7 @@ const Gallery = () => {
           </div>
         )}
       </main>
+      <WhatsAppFloatingButton />
     </div>
   );
 };
