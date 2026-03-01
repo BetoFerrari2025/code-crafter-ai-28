@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Camera, ArrowLeft, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -179,6 +180,7 @@ export default function Profile() {
           {t("profile.save")}
         </Button>
       </div>
+      <WhatsAppFloatingButton />
     </div>
   );
 }
