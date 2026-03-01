@@ -94,11 +94,16 @@ export default function AuthPage() {
         })
         if (error) throw error
         if (data.session) {
+          if (typeof (window as any).fbq === 'function') {
+            (window as any).fbq('track', 'CompleteRegistration');
+          }
           setMessage(t("auth.accountCreated"))
           toast({ title: t("auth.accountDone"), description: t("auth.redirecting") });
           setTimeout(() => navigate(redirectTo), 100)
         } else {
-          // Auto-confirm enabled, but just in case session isn't immediately available
+          if (typeof (window as any).fbq === 'function') {
+            (window as any).fbq('track', 'CompleteRegistration');
+          }
           toast({ title: t("auth.accountDone"), description: t("auth.redirecting") });
           setTimeout(() => navigate(redirectTo), 100)
         }
