@@ -9,6 +9,7 @@ import { Loader2, Settings, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ManageSubscriptionDialog from "@/components/ManageSubscriptionDialog";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
+import TrackingScripts from "@/components/TrackingScripts";
 import ProjectConnections from "@/components/ProjectConnections";
 import PricingDialog from "@/components/PricingDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -102,6 +103,7 @@ export default function Dashboard() {
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
+      <TrackingScripts />
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>
