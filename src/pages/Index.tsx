@@ -42,7 +42,7 @@ const Index = () => {
   };
 
   const handleStart = () => {
-    if (!prompt.trim()) {
+    if (!prompt.trim() && selectedImages.length === 0) {
       toast({
         title: t("hero.emptyPrompt"),
         description: t("hero.emptyPromptDesc"),
@@ -50,7 +50,7 @@ const Index = () => {
       });
       return;
     }
-    navigate("/editor", { state: { initialPrompt: prompt } });
+    navigate("/editor", { state: { initialPrompt: prompt || "Crie uma interface baseada nas imagens enviadas", initialImages: selectedImages.length > 0 ? selectedImages : undefined } });
   };
 
   return (
