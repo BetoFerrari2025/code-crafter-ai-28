@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ProjectsWorkspace from "@/components/ProjectsWorkspace";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Sparkles, Globe, Database, Download } from "lucide-react";
+import { ArrowRight, Sparkles, Globe, Database, Download, Image as ImageIcon, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeAnimation } from "react-type-animation";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -14,13 +14,35 @@ import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 const Index = () => {
   const [prompt, setPrompt] = useState("");
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
   const { isInstallable, isInstalled, install } = usePWAInstall();
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const imagePromises = Array.from(files).map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    });
+    const base64Images = await Promise.all(imagePromises);
+    setSelectedImages(prev => [...prev, ...base64Images]);
+    toast({ title: "Imagens carregadas", description: `${files.length} imagem(ns) adicionada(s)` });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleStart = () => {
-    if (!prompt.trim()) {
+    if (!prompt.trim() && selectedImages.length === 0) {
       toast({
         title: t("hero.emptyPrompt"),
         description: t("hero.emptyPromptDesc"),
@@ -28,7 +50,7 @@ const Index = () => {
       });
       return;
     }
-    navigate("/editor", { state: { initialPrompt: prompt } });
+    navigate("/editor", { state: { initialPrompt: prompt || "Crie uma interface baseada nas imagens enviadas", initialImages: selectedImages.length > 0 ? selectedImages : undefined } });
   };
 
   return (
@@ -104,8 +126,39 @@ const Index = () => {
                   }
                 }}
               />
+
+              {/* Image previews */}
+              {selectedImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 px-2 pt-2">
+                  {selectedImages.map((img, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
+                      <img src={img} alt={`Upload ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeImage(i)}
+                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 px-2 pt-2">
                 <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground text-xs md:text-sm" onClick={() => fileInputRef.current?.click()}>
+                    <ImageIcon className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    Imagem
+                  </Button>
                   <Button variant="ghost" size="sm" className="text-muted-foreground text-xs md:text-sm">
                     <Globe className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                     {t("hero.public")}
@@ -119,7 +172,7 @@ const Index = () => {
                   onClick={handleStart}
                   size="lg"
                   className="w-full md:w-auto rounded-full shadow-soft hover:shadow-medium transition-smooth"
-                  disabled={!prompt.trim()}
+                  disabled={!prompt.trim() && selectedImages.length === 0}
                 >
                   {t("hero.start")}
                   <ArrowRight className="w-4 h-4 ml-2" />
