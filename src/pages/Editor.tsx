@@ -207,6 +207,8 @@ const Editor = () => {
                 onFixRequestHandled={() => setFixRequest("")}
                 initialPrompt={initialPrompt}
                 onInitialPromptHandled={() => setInitialPrompt("")}
+                initialImages={initialImages}
+                onInitialImagesHandled={() => setInitialImages([])}
               />
             </div>
           </SheetContent>
@@ -232,6 +234,8 @@ const Editor = () => {
               onFixRequestHandled={() => setFixRequest("")}
               initialPrompt={initialPrompt}
               onInitialPromptHandled={() => setInitialPrompt("")}
+              initialImages={initialImages}
+              onInitialImagesHandled={() => setInitialImages([])}
             />
           </div>
         </div>
