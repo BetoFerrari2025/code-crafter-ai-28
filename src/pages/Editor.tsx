@@ -14,6 +14,7 @@ const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [fixRequest, setFixRequest] = useState<string>("");
   const [initialPrompt, setInitialPrompt] = useState<string>("");
+  const [initialImages, setInitialImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [mobileChatOpen, setMobileChatOpen] = useState(true);
@@ -127,6 +128,11 @@ const Editor = () => {
       const prompt = (location.state as any)?.initialPrompt;
       if (prompt) {
         setInitialPrompt(prompt);
+      }
+
+      const images = (location.state as any)?.initialImages;
+      if (images && images.length > 0) {
+        setInitialImages(images);
       }
 
       setIsLoading(false);
