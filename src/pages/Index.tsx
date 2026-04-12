@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ProjectsWorkspace from "@/components/ProjectsWorkspace";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Sparkles, Globe, Database, Download } from "lucide-react";
+import { ArrowRight, Sparkles, Globe, Database, Download, Image as ImageIcon, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeAnimation } from "react-type-animation";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -14,10 +14,32 @@ import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 const Index = () => {
   const [prompt, setPrompt] = useState("");
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
   const { isInstallable, isInstalled, install } = usePWAInstall();
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const imagePromises = Array.from(files).map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    });
+    const base64Images = await Promise.all(imagePromises);
+    setSelectedImages(prev => [...prev, ...base64Images]);
+    toast({ title: "Imagens carregadas", description: `${files.length} imagem(ns) adicionada(s)` });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleStart = () => {
     if (!prompt.trim()) {
