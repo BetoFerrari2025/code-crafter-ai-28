@@ -129,23 +129,24 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     { icon: "🎨", label: t("chat.sug6") },
   ];
 
-  const handleSend = async (overrideInput?: string) => {
+  const handleSend = async (overrideInput?: string, overrideImages?: string[]) => {
     const messageContent = overrideInput || input;
-    if ((!messageContent.trim() && selectedImages.length === 0) || isLoading) return;
+    const imagesToUse = overrideImages || selectedImages;
+    if ((!messageContent.trim() && imagesToUse.length === 0) || isLoading) return;
     setShowSuggestions(false);
     setLastUserInput(messageContent);
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: messageContent || t("chat.generateFromImages"),
-      images: selectedImages.length > 0 ? selectedImages : undefined,
+      images: imagesToUse.length > 0 ? imagesToUse : undefined,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    const imagesToSend = [...selectedImages];
+    const imagesToSend = [...imagesToUse];
     setSelectedImages([]);
     setIsLoading(true);
 
