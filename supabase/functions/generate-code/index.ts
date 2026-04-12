@@ -129,8 +129,10 @@ O código que você gerar será transpilado com Babel (presets: react, typescrip
 - "as const" assertions complexas
 - Decorators (@)
 - Top-level await
-- NUNCA escreva "const { ... } = LucideIcons;" — isso é INJETADO AUTOMATICAMENTE pelo compilador a partir dos imports de lucide-react
+- NUNCA NUNCA NUNCA escreva "const { ... } = LucideIcons;" ou "const { IconName } = LucideIcons" — o compilador INJETA isso automaticamente. Se você escrever, causará ERRO DE COMPILAÇÃO!
+- NUNCA escreva "const LucideIcons = ..." — isso também causa erro
 - NUNCA duplique declarações de variáveis ou destructurings no código
+- NUNCA use "import { X as Y } from 'lucide-react'" com alias — use apenas nomes diretos dos ícones
 
 ✅ O QUE FUNCIONA:
 - React hooks: useState, useEffect, useRef, useMemo, useCallback, createContext, useContext, useReducer
@@ -400,6 +402,14 @@ Retorne o código COMPLETO com APENAS as modificações pedidas aplicadas.`;
                   .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
                   .replace(/```\n?/g, '')
                   .trim();
+
+                // Remove LucideIcons destructuring lines that cause compilation errors
+                cleanCode = cleanCode.replace(/^\s*const\s+\{[^}]*\}\s*=\s*LucideIcons\s*;?\s*$/gm, '');
+                // Remove any "const LucideIcons = ..." lines
+                cleanCode = cleanCode.replace(/^\s*const\s+LucideIcons\s*=.*$/gm, '');
+                // Remove duplicate "import { X as Y } from 'lucide-react'" and fix alias imports
+                cleanCode = cleanCode.replace(/\bImage\s+as\s+ImageIcon\b/g, 'ImageIcon');
+                cleanCode = cleanCode.trim();
 
                 if (cleanCode.length > 0) {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
