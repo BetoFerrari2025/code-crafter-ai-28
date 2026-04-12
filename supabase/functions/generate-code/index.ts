@@ -397,19 +397,7 @@ Retorne o código COMPLETO com APENAS as modificações pedidas aplicadas.`;
 
               const data = line.slice(6);
               if (data === '[DONE]') {
-                // Clean and send the final code
-                let cleanCode = generatedCode
-                  .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
-                  .replace(/```\n?/g, '')
-                  .trim();
-
-                // Remove LucideIcons destructuring lines that cause compilation errors
-                cleanCode = cleanCode.replace(/^\s*const\s+\{[^}]*\}\s*=\s*LucideIcons\s*;?\s*$/gm, '');
-                // Remove any "const LucideIcons = ..." lines
-                cleanCode = cleanCode.replace(/^\s*const\s+LucideIcons\s*=.*$/gm, '');
-                // Remove duplicate "import { X as Y } from 'lucide-react'" and fix alias imports
-                cleanCode = cleanCode.replace(/\bImage\s+as\s+ImageIcon\b/g, 'ImageIcon');
-                cleanCode = cleanCode.trim();
+                const cleanCode = sanitizeGeneratedCode(generatedCode);
 
                 if (cleanCode.length > 0) {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
@@ -441,11 +429,7 @@ Retorne o código COMPLETO com APENAS as modificações pedidas aplicadas.`;
 
           // If we got here without [DONE], flush whatever we have
           if (generatedCode.length > 0) {
-            let cleanCode = generatedCode
-              .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
-              .replace(/```\n?/g, '')
-              .trim();
-            
+            const cleanCode = sanitizeGeneratedCode(generatedCode);
             if (cleanCode.length > 0) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
             }
