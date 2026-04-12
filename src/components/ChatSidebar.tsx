@@ -28,9 +28,11 @@ interface ChatSidebarProps {
   onFixRequestHandled?: () => void;
   initialPrompt?: string;
   onInitialPromptHandled?: () => void;
+  initialImages?: string[];
+  onInitialImagesHandled?: () => void;
 }
 
-const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled, initialPrompt, onInitialPromptHandled }: ChatSidebarProps) => {
+const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled, initialPrompt, onInitialPromptHandled, initialImages, onInitialImagesHandled }: ChatSidebarProps) => {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
