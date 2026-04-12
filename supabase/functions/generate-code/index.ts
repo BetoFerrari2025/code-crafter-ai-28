@@ -12,6 +12,114 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Allowed import sources in the preview environment
+const ALLOWED_IMPORTS = new Set(['react', 'lucide-react']);
+
+// Forbidden libraries that will crash the preview
+const FORBIDDEN_IMPORT_PATTERNS = [
+  /from\s+['"]react-dom\/client['"]/,
+  /from\s+['"]react-router/,
+  /from\s+['"]framer-motion['"]/,
+  /from\s+['"]axios['"]/,
+  /from\s+['"]@tanstack/,
+  /from\s+['"]react-hook-form['"]/,
+  /from\s+['"]styled-components['"]/,
+  /from\s+['"]@emotion/,
+  /from\s+['"]next\//,
+  /from\s+['"]vue['"]/,
+  /from\s+['"]svelte['"]/,
+  /require\s*\(/,
+];
+
+function sanitizeGeneratedCode(raw: string): string {
+  let code = raw
+    // Remove markdown code fences
+    .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  // Remove any leading non-code text (explanations before the actual code)
+  const firstImportOrConst = code.search(/^(import\s|const\s|\/\/|\/\*)/m);
+  if (firstImportOrConst > 0) {
+    code = code.substring(firstImportOrConst);
+  }
+
+  // --- LucideIcons destructuring (compiler injects this automatically) ---
+  code = code.replace(/^\s*const\s+\{[^}]*\}\s*=\s*LucideIcons\s*;?\s*$/gm, '');
+  code = code.replace(/^\s*const\s+LucideIcons\s*=.*$/gm, '');
+
+  // --- Fix alias imports (Image as ImageIcon → ImageIcon) ---
+  code = code.replace(/\bImage\s+as\s+ImageIcon\b/g, 'ImageIcon');
+
+  // --- Remove forbidden imports ---
+  const lines = code.split('\n');
+  const cleanLines: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Check if line is a forbidden import
+    let isForbidden = false;
+    for (const pattern of FORBIDDEN_IMPORT_PATTERNS) {
+      if (pattern.test(trimmed)) {
+        isForbidden = true;
+        break;
+      }
+    }
+    if (isForbidden) continue; // skip this line
+
+    // Remove imports from unknown packages (not react or lucide-react)
+    if (/^import\s+.*\s+from\s+['"]([^'"./]+)['"]/.test(trimmed)) {
+      const match = trimmed.match(/from\s+['"]([^'"]+)['"]/);
+      if (match && !ALLOWED_IMPORTS.has(match[1])) {
+        continue; // skip unknown external import
+      }
+    }
+
+    cleanLines.push(line);
+  }
+  code = cleanLines.join('\n');
+
+  // --- Remove duplicate empty lines ---
+  code = code.replace(/\n{3,}/g, '\n\n');
+
+  // --- Basic syntax checks ---
+  // Check balanced braces
+  let braces = 0, parens = 0, brackets = 0;
+  for (const ch of code) {
+    if (ch === '{') braces++;
+    else if (ch === '}') braces--;
+    else if (ch === '(') parens++;
+    else if (ch === ')') parens--;
+    else if (ch === '[') brackets++;
+    else if (ch === ']') brackets--;
+  }
+
+  // Try to fix unbalanced closing braces/parens (truncated code)
+  if (braces > 0) code += '\n' + '}'.repeat(braces);
+  if (parens > 0) code += ')'.repeat(parens);
+  if (brackets > 0) code += ']'.repeat(brackets);
+
+  // --- Ensure required structure ---
+  // Must have "export default App" or add it
+  if (!/export\s+default\s+App\s*;?\s*$/.test(code.trim())) {
+    // Check if App component is defined
+    if (/const\s+App\s*=/.test(code)) {
+      code = code.trimEnd() + '\n\nexport default App;';
+    }
+  }
+
+  // --- Remove trailing text after "export default App;" ---
+  const exportMatch = code.match(/export\s+default\s+App\s*;/);
+  if (exportMatch && exportMatch.index !== undefined) {
+    const afterExport = code.substring(exportMatch.index + exportMatch[0].length).trim();
+    // If there's non-empty trailing content that isn't code, remove it
+    if (afterExport && !/^(\/\/|\/\*)/.test(afterExport)) {
+      code = code.substring(0, exportMatch.index + exportMatch[0].length);
+    }
+  }
+
+  return code.trim();
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -397,19 +505,7 @@ Retorne o código COMPLETO com APENAS as modificações pedidas aplicadas.`;
 
               const data = line.slice(6);
               if (data === '[DONE]') {
-                // Clean and send the final code
-                let cleanCode = generatedCode
-                  .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
-                  .replace(/```\n?/g, '')
-                  .trim();
-
-                // Remove LucideIcons destructuring lines that cause compilation errors
-                cleanCode = cleanCode.replace(/^\s*const\s+\{[^}]*\}\s*=\s*LucideIcons\s*;?\s*$/gm, '');
-                // Remove any "const LucideIcons = ..." lines
-                cleanCode = cleanCode.replace(/^\s*const\s+LucideIcons\s*=.*$/gm, '');
-                // Remove duplicate "import { X as Y } from 'lucide-react'" and fix alias imports
-                cleanCode = cleanCode.replace(/\bImage\s+as\s+ImageIcon\b/g, 'ImageIcon');
-                cleanCode = cleanCode.trim();
+                const cleanCode = sanitizeGeneratedCode(generatedCode);
 
                 if (cleanCode.length > 0) {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
@@ -441,11 +537,7 @@ Retorne o código COMPLETO com APENAS as modificações pedidas aplicadas.`;
 
           // If we got here without [DONE], flush whatever we have
           if (generatedCode.length > 0) {
-            let cleanCode = generatedCode
-              .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/g, '')
-              .replace(/```\n?/g, '')
-              .trim();
-            
+            const cleanCode = sanitizeGeneratedCode(generatedCode);
             if (cleanCode.length > 0) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'code', code: cleanCode })}\n\n`));
             }
