@@ -70,6 +70,11 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
   // Auto-send initial prompt from Index page
   useEffect(() => {
     if (initialPrompt && !isLoading) {
+      // Pre-load initial images if provided
+      if (initialImages && initialImages.length > 0) {
+        setSelectedImages(initialImages);
+        if (onInitialImagesHandled) onInitialImagesHandled();
+      }
       handleSend(initialPrompt);
       if (onInitialPromptHandled) onInitialPromptHandled();
     }
