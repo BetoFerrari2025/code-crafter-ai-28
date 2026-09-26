@@ -18,6 +18,7 @@ const Editor = () => {
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [mobileChatOpen, setMobileChatOpen] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -196,6 +197,7 @@ const Editor = () => {
             <div className="h-full">
               <ChatSidebar
                 onCodeGenerated={(code) => { setGeneratedCode(code); setMobileChatOpen(false); }}
+                onGeneratingChange={setIsGenerating}
                 currentCode={generatedCode}
                 fixRequest={fixRequest}
                 onFixRequestHandled={() => setFixRequest("")}
@@ -208,7 +210,7 @@ const Editor = () => {
 
         {/* Preview - full screen */}
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
+          <CodePreview generatedCode={generatedCode} isGenerating={isGenerating} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
         </div>
       </div>
 
@@ -221,6 +223,7 @@ const Editor = () => {
           <div className="w-[380px] h-full">
             <ChatSidebar
               onCodeGenerated={setGeneratedCode}
+              onGeneratingChange={setIsGenerating}
               currentCode={generatedCode}
               fixRequest={fixRequest}
               onFixRequestHandled={() => setFixRequest("")}
@@ -239,7 +242,7 @@ const Editor = () => {
           >
             {chatOpen ? <PanelLeftClose className="h-5 w-5 text-foreground" /> : <PanelLeftOpen className="h-5 w-5 text-foreground" />}
           </Button>
-          <CodePreview generatedCode={generatedCode} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
+          <CodePreview generatedCode={generatedCode} isGenerating={isGenerating} onCodeChange={setGeneratedCode} onRequestFix={setFixRequest} />
         </div>
       </div>
     </div>
