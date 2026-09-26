@@ -14,7 +14,6 @@ const Editor = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [fixRequest, setFixRequest] = useState<string>("");
   const [initialPrompt, setInitialPrompt] = useState<string>("");
-  const [initialImages, setInitialImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [mobileChatOpen, setMobileChatOpen] = useState(true);
@@ -130,11 +129,6 @@ const Editor = () => {
         setInitialPrompt(prompt);
       }
 
-      const images = (location.state as any)?.initialImages;
-      if (images && images.length > 0) {
-        setInitialImages(images);
-      }
-
       setIsLoading(false);
     };
 
@@ -207,8 +201,6 @@ const Editor = () => {
                 onFixRequestHandled={() => setFixRequest("")}
                 initialPrompt={initialPrompt}
                 onInitialPromptHandled={() => setInitialPrompt("")}
-                initialImages={initialImages}
-                onInitialImagesHandled={() => setInitialImages([])}
               />
             </div>
           </SheetContent>
@@ -234,8 +226,6 @@ const Editor = () => {
               onFixRequestHandled={() => setFixRequest("")}
               initialPrompt={initialPrompt}
               onInitialPromptHandled={() => setInitialPrompt("")}
-              initialImages={initialImages}
-              onInitialImagesHandled={() => setInitialImages([])}
             />
           </div>
         </div>
