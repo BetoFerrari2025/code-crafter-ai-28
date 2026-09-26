@@ -23,6 +23,7 @@ interface Message {
 
 interface ChatSidebarProps {
   onCodeGenerated?: (code: string) => void;
+  onGeneratingChange?: (isGenerating: boolean) => void;
   currentCode?: string;
   fixRequest?: string;
   onFixRequestHandled?: () => void;
@@ -30,7 +31,7 @@ interface ChatSidebarProps {
   onInitialPromptHandled?: () => void;
 }
 
-const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHandled, initialPrompt, onInitialPromptHandled }: ChatSidebarProps) => {
+const ChatSidebar = ({ onCodeGenerated, onGeneratingChange, currentCode, fixRequest, onFixRequestHandled, initialPrompt, onInitialPromptHandled }: ChatSidebarProps) => {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -141,6 +142,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
     const imagesToSend = [...selectedImages];
     setSelectedImages([]);
     setIsLoading(true);
+    onGeneratingChange?.(true);
 
     // Save user message to DB
     try {
@@ -173,16 +175,6 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
         images: imagesToSend.length > 0 ? imagesToSend : undefined,
       });
 
-      const isCorrection = /(corrija|corrige|ajusta|ajuste|modifica|modifique|mude|altere|conserte|conserta|arruma|arrume|erro|bug|problema|não funciona|não está funcionando)/i.test(messageContent);
-      
-      if (currentCode && isCorrection) {
-        const lastIndex = messagesToSend.length - 1;
-        messagesToSend[lastIndex] = {
-          ...messagesToSend[lastIndex],
-          content: `${messageContent}\n\n⚠️ CÓDIGO ATUAL QUE DEVE SER CORRIGIDO (NÃO CRIE UM NOVO, APENAS MODIFIQUE):\n\n${currentCode}`,
-        };
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error(t("chat.sessionExpired"));
@@ -196,7 +188,10 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ messages: messagesToSend })
+          body: JSON.stringify({
+            messages: messagesToSend,
+            ...(currentCode?.trim() ? { currentCode } : {}),
+          })
         }
       );
 
@@ -306,6 +301,7 @@ const ChatSidebar = ({ onCodeGenerated, currentCode, fixRequest, onFixRequestHan
       toast({ title: t("chat.error"), description: t("chat.errorDesc"), variant: "destructive" });
     } finally {
       setIsLoading(false);
+      onGeneratingChange?.(false);
       scrollToBottom();
     }
   };

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import * as Babel from '@babel/standalone';
+import { sanitizeGeneratedCode } from '@/lib/generatedCode';
 
 interface CompilationResult {
   html: string;
@@ -10,65 +11,7 @@ export const useCodeCompiler = () => {
   const [isCompiling, setIsCompiling] = useState(false);
 
   const cleanCode = useCallback((rawCode: string): string => {
-    let cleaned = rawCode;
-
-    // Se vier em formato JSON, extrai o campo "code"
-    try {
-      const parsed = JSON.parse(rawCode);
-      if (parsed.code) cleaned = parsed.code;
-    } catch {
-      // não é JSON, continua
-    }
-
-    // Remove markdown code blocks
-    cleaned = cleaned
-      .replace(/```(?:jsx|tsx|javascript|typescript|react)?\n?/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
-    // Extract lucide icon names before removing imports
-    const lucideImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]lucide-react['"];?/gm;
-    const lucideIcons: string[] = [];
-    let lucideMatch;
-    while ((lucideMatch = lucideImportRegex.exec(cleaned)) !== null) {
-      const icons = lucideMatch[1].split(',').map(s => s.trim()).filter(Boolean);
-      lucideIcons.push(...icons);
-    }
-
-    // Remove imports (não suportados no browser)
-    cleaned = cleaned
-      .replace(/^import\s+.*?from\s+['"][^'"]+['"];?\s*$/gm, '')
-      .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
-      .trim();
-
-    // Remove any existing LucideIcons destructuring lines (from previous iterations)
-    cleaned = cleaned
-      .replace(/^const\s*\{[^}]*\}\s*=\s*LucideIcons;\s*$/gm, '')
-      .trim();
-
-    // Add lucide icon destructuring from the proxy (single line, deduplicated)
-    if (lucideIcons.length > 0) {
-      const uniqueIcons = [...new Set(lucideIcons)];
-      cleaned = `const { ${uniqueIcons.join(', ')} } = LucideIcons;\n${cleaned}`;
-    }
-
-    // Trata export default
-    if (/export\s+default\s+function\s+(\w+)/.test(cleaned)) {
-      cleaned = cleaned.replace(/export\s+default\s+function\s+(\w+)/, 'function $1');
-      const match = cleaned.match(/function\s+(\w+)/);
-      if (match) {
-        cleaned += `\nconst App = ${match[1]};`;
-      }
-    } else if (/export\s+default\s+/.test(cleaned) && !/const\s+App\s*=/.test(cleaned)) {
-      cleaned = cleaned.replace(/export\s+default\s+/gm, 'const App = ');
-    } else {
-      cleaned = cleaned.replace(/export\s+default\s+/gm, '');
-    }
-
-    // Remove outros exports
-    cleaned = cleaned.replace(/^export\s+/gm, '');
-
-    return cleaned;
+    return sanitizeGeneratedCode(rawCode);
   }, []);
 
   const compile = useCallback((rawCode: string): CompilationResult => {
